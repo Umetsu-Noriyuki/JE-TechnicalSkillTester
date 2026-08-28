@@ -1,0 +1,12 @@
+**/**
+!appsscript.json
+!*.js
+!*.html
+node_modules/
+.claude/
+package-lock.json
+.git/
+.clasp.json
+!*.md
+# もし大きなドキュメントやログがあればそれも追加
+*.log

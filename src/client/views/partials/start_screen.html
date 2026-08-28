@@ -1,0 +1,106 @@
+<div id="start-screen" class="screen">
+  <div class="nav">
+    <span class="nav-brand">プログラミングスキル判定テスト</span>
+    <span class="text-muted" style="font-size: 13px">株式会社ジョブエール</span>
+  </div>
+  <div class="screen-body two-col">
+    <div style="display: flex; flex-direction: column">
+      <span class="tag tag-outline" style="align-self: flex-start">
+        <? if (role === 'applicant') { ?>
+          入社希望者として受験します
+        <? } else if (role === 'newhire') { ?>
+          未経験の新入社員として受験します
+        <? } else { ?>
+          入社3年目までの社員として受験します
+        <? } ?>
+      </span>
+      <h1 style="font-size: 40px; margin: 20px 0 0">受験にあたっての確認事項</h1>
+
+      <? if (role === 'applicant') { ?>
+        <p style="max-width: 54ch; margin: 16px 0 0; font-size: 16px">
+          本テストは、コーディング・SQL・プログラミング技法・ロジカルシンキング・行動指針の5分野から出題します。現時点での知識と考え方を把握するためのもので、満点を求めるものではありません。落ち着いてご回答ください。
+        </p>
+      <? } else { ?>
+        <p style="max-width: 54ch; margin: 16px 0 0; font-size: 16px">
+          本テストは、コーディング・SQL・プログラミング技法・ロジカルシンキング・行動指針の5分野から出題します。苦手分野を把握し、今後の教育計画に反映するためのものです。点数そのものが評価に直結するものではありません。
+        </p>
+      <? } ?>
+
+      <dl class="info-list">
+        <dt>出題数</dt>
+        <dd>全30問（5分野 各6問）</dd>
+        <dt>制限時間</dt>
+        <dd>30分（「テスト開始」を押した時点から計測を開始します）</dd>
+        <dt>出題形式</dt>
+        <dd>選択式（4つの選択肢から1つを選択）／記述式（テキスト入力）</dd>
+        <? if (role === 'applicant') { ?>
+          <dt>回答の扱い</dt>
+          <dd>
+            ご回答は記録され、採用選考の参考情報として担当者が確認します。<span
+              style="color: var(--color-accent-700)"
+              >本画面の受験区分では、正解率は画面に表示されません。</span
+            >
+          </dd>
+        <? } else { ?>
+          <dt>結果の表示</dt>
+          <dd>
+            「採点」ボタン押下後、総合正解率と分野別正解率を画面に表示します。<span class="text-muted"
+              >記述式は自動採点の対象外です（後日、担当者が確認します）。</span
+            >
+          </dd>
+        <? } ?>
+      </dl>
+
+      <? if (role === 'applicant') { ?>
+        <p class="text-muted" style="margin: 32px 0 0; font-size: 13px">
+          ※ 制限時間に達した場合は入力が締め切られ、その時点までのご回答で終了となります。
+        </p>
+      <? } else { ?>
+        <p class="text-muted" style="margin: 32px 0 0; font-size: 13px">
+          ※ 案内されたURLと受験区分が異なる場合は、開始せずに担当者へご連絡ください。
+        </p>
+      <? } ?>
+    </div>
+
+    <div class="field-group" style="padding-top: 8px">
+      <h4 style="margin: 0">受験者情報の入力</h4>
+      <div class="field">
+        <label for="examinee-name">氏名（必須）</label>
+        <input class="input" id="examinee-name" type="text" placeholder="山田 太郎" />
+        <? if (role === 'applicant') { ?>
+          <p class="text-muted" style="margin: 6px 0 0; font-size: 12px">全角・半角どちらでも入力できます。</p>
+        <? } ?>
+      </div>
+
+      <? if (role !== 'applicant') { ?>
+        <div class="field">
+          <label for="examinee-number">社員番号（必須）</label>
+          <input class="input" id="examinee-number" type="text" placeholder="A123456" />
+        </div>
+        <div class="field">
+          <label for="examinee-department">所属（必須）</label>
+          <select class="input" id="examinee-department">
+            <option>開発部</option>
+            <option>インフラ部</option>
+            <option>品質保証部</option>
+            <option>営業部</option>
+            <option>人事・総務部</option>
+            <option>その他</option>
+          </select>
+        </div>
+      <? } ?>
+
+      <button class="btn btn-primary btn-block" type="button" style="min-height: 44px; font-size: 15px">
+        テスト開始
+      </button>
+
+      <? if (role === 'applicant') { ?>
+        <p class="text-muted" style="margin: 0; font-size: 12px">
+          ボタンを押すと問題が読み込まれ、同時にタイマーが始まります。準備ができてから押してください。
+        </p>
+      <? } else { ?>
+        <p class="text-muted" style="margin: 0; font-size: 12px">未入力の項目があるとテストは開始されません。</p>
+      <? } ?>
+    </div>
+  </div>
+</div>

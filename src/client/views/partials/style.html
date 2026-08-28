@@ -1,0 +1,491 @@
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  /* Broadsheet — design-system tokens and component classes (claude.ai/design より導入)。 */
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
+
+  :root {
+    --color-bg: #f3f2f2;
+    --color-surface: #eae9e9;
+    --color-text: #201e1d;
+    --color-accent: #0088b0;
+    --color-accent-2: #d6006c;
+    --color-divider: color-mix(in srgb, #201e1d 16%, transparent);
+
+    --color-neutral-100: #f8f4f4;
+    --color-neutral-200: #eae7e7;
+    --color-neutral-300: #d7d3d3;
+    --color-neutral-400: #bab6b6;
+    --color-neutral-500: #9b9797;
+    --color-neutral-600: #7d7979;
+    --color-neutral-700: #605d5d;
+    --color-neutral-800: #444141;
+    --color-neutral-900: #2d2b2b;
+
+    --color-accent-100: #e9f8ff;
+    --color-accent-200: #cbeeff;
+    --color-accent-300: #99e0ff;
+    --color-accent-400: #62c5ee;
+    --color-accent-500: #38a6cf;
+    --color-accent-600: #1186ac;
+    --color-accent-700: #006786;
+    --color-accent-800: #004961;
+    --color-accent-900: #0a303e;
+
+    --color-accent-2-100: #fff1f4;
+    --color-accent-2-200: #ffdee6;
+    --color-accent-2-300: #ffc0d0;
+    --color-accent-2-400: #ff90b1;
+    --color-accent-2-500: #ff458e;
+    --color-accent-2-600: #d82071;
+    --color-accent-2-700: #aa0b56;
+    --color-accent-2-800: #790e3d;
+    --color-accent-2-900: #4b1528;
+
+    --font-heading: 'Source Serif 4', system-ui, sans-serif;
+    --font-heading-weight: 600;
+    --font-body: 'Source Serif 4', system-ui, sans-serif;
+
+    --space-1: 5px;
+    --space-2: 10px;
+    --space-3: 15px;
+    --space-4: 20px;
+    --space-6: 30px;
+    --space-8: 40px;
+
+    --radius-sm: 1px;
+    --radius-md: 2px;
+    --radius-lg: 4px;
+
+    --shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
+    --shadow-md: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
+    --shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-neutral-200);
+    color: var(--color-text);
+    font-family: var(--font-body), 'Noto Serif JP', serif;
+    font-size: 15px;
+    line-height: 1.55;
+    font-weight: 400;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading), 'Noto Serif JP', serif;
+    font-weight: var(--font-heading-weight);
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    margin: 0 0 var(--space-2);
+  }
+  h1 {
+    font-size: 42px;
+  }
+  h2 {
+    font-size: 32px;
+  }
+  h3 {
+    font-size: 25px;
+  }
+  h4 {
+    font-size: 20px;
+  }
+  h5 {
+    font-size: 16px;
+  }
+  h6 {
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  p {
+    margin: 0 0 var(--space-3);
+  }
+  a {
+    color: var(--color-accent);
+    text-underline-offset: 3px;
+  }
+  a:hover {
+    color: var(--color-accent-700);
+  }
+  img {
+    display: block;
+    max-width: 100%;
+  }
+  .text-muted {
+    color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  }
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  }
+
+  /* — buttons — */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: var(--font-heading);
+    font-weight: var(--font-heading-weight);
+    font-size: 14px;
+    line-height: 1.2;
+    color: var(--color-text);
+    background: transparent;
+    border: 1px solid transparent;
+    padding: var(--space-2) calc(var(--space-3) * 1.2);
+    border-radius: var(--radius-md);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+  .btn-primary:hover {
+    background: var(--color-accent-600);
+  }
+  .btn-primary:active {
+    background: var(--color-accent-700);
+  }
+  .btn-secondary {
+    border-color: var(--color-divider);
+  }
+  .btn-secondary:hover {
+    background: color-mix(in srgb, var(--color-text) 7%, transparent);
+  }
+  .btn-secondary:active {
+    background: color-mix(in srgb, var(--color-text) 14%, transparent);
+  }
+  .btn-block {
+    width: 100%;
+    margin-top: var(--space-2);
+  }
+
+  /* — forms — */
+  .field > label {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 5px;
+    color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  }
+  .input {
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--color-text);
+    caret-color: var(--color-accent);
+    background: var(--color-surface);
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius-md);
+  }
+  .input::placeholder {
+    color: color-mix(in srgb, var(--color-text) 65%, transparent);
+    opacity: 1;
+  }
+  .input:hover {
+    border-color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  }
+  .input:focus-visible {
+    border-color: var(--color-accent);
+    outline-offset: 0;
+  }
+  textarea.input {
+    min-height: 90px;
+    resize: vertical;
+  }
+  .radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .radio input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+  .radio .dot {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-divider);
+  }
+  .radio:hover .dot {
+    border-color: var(--color-accent);
+  }
+  .radio input:checked + .dot {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    box-shadow: inset 0 0 0 4px var(--color-bg);
+  }
+  .radio input:focus-visible + .dot {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* — tags — */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    padding: 3px 10px;
+    border-radius: calc(var(--radius-md) * 0.75);
+  }
+  .tag-accent {
+    background: var(--color-accent-100);
+    color: var(--color-accent-800);
+  }
+  .tag-accent-2 {
+    background: var(--color-accent-2-100);
+    color: var(--color-accent-2-800);
+  }
+  .tag-neutral {
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-800);
+  }
+  .tag-outline {
+    border: 1px solid var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  /* — navigation — */
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+  }
+  .nav-brand {
+    font-family: var(--font-heading);
+    font-weight: var(--font-heading-weight);
+    font-size: 18px;
+    margin-right: auto;
+  }
+
+  /* — tables — */
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .table th {
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--color-text) 60%, transparent);
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--color-divider);
+  }
+  .table td {
+    padding: var(--space-2);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+  }
+  .table tbody tr:hover {
+    background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  }
+
+  /* — CMYKスコア数字（結果画面の総合正解率表示） — */
+  .cmyk-num {
+    --cmyk-num-ground: var(--color-bg);
+    position: relative;
+    width: fit-content;
+    line-height: 0.9;
+    font-feature-settings: 'pnum' 1;
+    background: var(--cmyk-num-ground);
+    padding: 0.12em;
+    margin: -0.12em;
+  }
+  .cmyk-num .paper {
+    color: var(--color-bg);
+    text-shadow:
+      0.036em 0.025em 0 var(--color-bg),
+      -0.031em -0.023em 0 var(--color-bg);
+  }
+  .cmyk-num .plate {
+    position: absolute;
+    inset: 0.12em;
+    mix-blend-mode: multiply;
+  }
+  .cmyk-num .plate-c {
+    color: var(--color-accent);
+  }
+  .cmyk-num .plate-m {
+    color: var(--color-accent-2);
+    translate: 0.036em 0.025em;
+  }
+  .cmyk-num .plate-y {
+    color: #edbb00;
+    translate: -0.031em -0.023em;
+  }
+
+  /* — 画面コンテナ／レイアウト共通 — */
+  .screen {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    background: var(--color-bg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+  .screen-body {
+    padding: 44px 56px 56px;
+  }
+  .two-col {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 72px;
+  }
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .info-list {
+    margin: 36px 0 0;
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    row-gap: 18px;
+    column-gap: 24px;
+    font-size: 16px;
+  }
+  .info-list dt {
+    font-size: 13px;
+    padding-top: 3px;
+    color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  }
+  .info-list dd {
+    margin: 0;
+  }
+
+  /* — 受験画面 — */
+  .quiz-header {
+    padding: 18px 56px 16px;
+    display: flex;
+    align-items: flex-end;
+    gap: 48px;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-sm);
+  }
+  .quiz-progress {
+    width: 300px;
+  }
+  .quiz-progress-bar {
+    height: 4px;
+    background: color-mix(in srgb, var(--color-text) 12%, transparent);
+  }
+  .quiz-progress-bar-fill {
+    height: 4px;
+    background: var(--color-accent);
+  }
+  .quiz-body {
+    padding: 40px 56px 56px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 64px;
+  }
+  .quiz-questions {
+    display: flex;
+    flex-direction: column;
+    gap: 56px;
+    max-width: 760px;
+  }
+  .quiz-question {
+    display: flex;
+    gap: 28px;
+  }
+  .quiz-question-number {
+    width: 56px;
+    flex: none;
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.1;
+    padding-top: 2px;
+  }
+  .quiz-question-body {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+  }
+  .quiz-nav-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+  .quiz-nav-cell {
+    height: 34px;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    background: var(--color-surface);
+  }
+  .quiz-nav-cell.is-answered {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+  .quiz-timeout-banner {
+    padding: 28px 56px 20px;
+    background: var(--color-accent-2-100);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .quiz-timeout-banner h4,
+  .quiz-timeout-banner p {
+    color: var(--color-accent-2-800);
+  }
+
+  /* — レスポンシブ（12章 対応デバイス要件） — */
+  @media (max-width: 900px) {
+    .two-col,
+    .quiz-body {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 32px;
+    }
+    .screen-body {
+      padding: 28px 20px 40px;
+    }
+    .quiz-header {
+      padding: 14px 20px 12px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .quiz-body {
+      padding: 24px 20px 40px;
+    }
+    .quiz-progress {
+      width: 100%;
+    }
+  }
+</style>
