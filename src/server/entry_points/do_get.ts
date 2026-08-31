@@ -1,12 +1,9 @@
-const VALID_ROLES = ['applicant', 'newhire', 'junior'] as const;
-
-const isValidRole = (role: string | undefined): boolean =>
-  role !== undefined && (VALID_ROLES as readonly string[]).includes(role);
+import { isExamineeRole } from '../../shared/types/examinee_role';
 
 export const doGet = (e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.HTML.HtmlOutput => {
   const role = e.parameter.role;
 
-  if (!isValidRole(role)) {
+  if (!isExamineeRole(role)) {
     return HtmlService.createHtmlOutput(
       '<p>このページには、管理者から案内された専用URLからアクセスしてください。</p>',
     );
