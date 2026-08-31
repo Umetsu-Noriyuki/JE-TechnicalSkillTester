@@ -156,7 +156,10 @@ export const updateProgress = (elements: ProgressElements, answeredCount: number
   elements.unansweredCount.textContent = `${totalCount - answeredCount}問`;
 };
 
-/** 問題一覧（サイドバーのナビグリッド）を描画する。クリックで該当問題へスクロールする。 */
+/**
+ * 問題一覧（サイドバーのナビグリッド）を描画する。クリック・キーボード操作（Enter/Space）で
+ * 該当問題へスクロールする（12章：ボタン等はキーボード操作でも押下できること）。
+ */
 export const renderNavGrid = (
   container: HTMLElement,
   questionIds: readonly string[],
@@ -165,7 +168,8 @@ export const renderNavGrid = (
   container.replaceChildren();
 
   questionIds.forEach((questionId, index) => {
-    const cell = createEl('span', { className: 'quiz-nav-cell', text: String(index + 1) });
+    const cell = createEl('button', { className: 'quiz-nav-cell', text: String(index + 1) });
+    cell.type = 'button';
     cell.dataset.questionId = questionId;
     cell.addEventListener('click', () => onNavigate(questionId));
     container.appendChild(cell);
@@ -189,21 +193,54 @@ export const updateTimerDisplay = (elements: { elapsedTime: HTMLElement }, elaps
   elements.elapsedTime.classList.toggle('is-warning', isRemainingTimeWarning(elapsedSeconds));
 };
 
-const disableAllInputs = (questionsContainer: HTMLElement): void => {
-  questionsContainer.querySelectorAll('input, textarea').forEach((el) => {
+interface QuizControlElements {
+  questionsContainer: HTMLElement;
+  navGrid: HTMLElement;
+  jumpUnansweredButton: HTMLButtonElement;
+}
+
+/**
+ * 全設問の入力欄・問題間の移動操作を無効化する（9-3章：「採点」／「回答終了」ボタン
+ * 以外はクリックできない状態にする）。入力済みの内容はdisabled化しても保持される。
+ */
+const disableQuizControls = (elements: QuizControlElements): void => {
+  elements.questionsContainer.querySelectorAll('input, textarea').forEach((el) => {
     if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
       el.disabled = true;
     }
   });
+  elements.navGrid.querySelectorAll('button').forEach((el) => {
+    if (el instanceof HTMLButtonElement) {
+      el.disabled = true;
+    }
+  });
+  elements.jumpUnansweredButton.disabled = true;
 };
 
 /**
- * 制限時間到達時の画面状態にする（9-3章）：バナー表示、全設問の入力欄を操作不可にする。
- * 入力済みの内容はdisabled化しても保持される。
+ * 制限時間到達時の画面状態にする（9-3章）：バナー表示、全設問の入力欄・移動操作を無効化する。
  */
-export const showTimeoutState = (elements: { timeoutBanner: HTMLElement; questionsContainer: HTMLElement }): void => {
+export const showTimeoutState = (elements: { timeoutBanner: HTMLElement } & QuizControlElements): void => {
   elements.timeoutBanner.style.display = '';
-  disableAllInputs(elements.questionsContainer);
+  disableQuizControls(elements);
+};
+
+/**
+ * 問題一覧のうち、最初に見つかった未回答の設問へスクロールする。
+ * 未回答の設問がない場合はその旨を通知する。
+ */
+export const jumpToFirstUnanswered = (
+  questionsContainer: HTMLElement,
+  answeredQuestionIds: ReadonlySet<string>,
+): void => {
+  const target = Array.from(questionsContainer.querySelectorAll('.quiz-question')).find(
+    (el): el is HTMLElement => el instanceof HTMLElement && !answeredQuestionIds.has(el.dataset.questionId ?? ''),
+  );
+  if (target === undefined) {
+    window.alert('未回答の問題はありません。');
+    return;
+  }
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
 const SUBMIT_BUTTON_LABEL: Record<ExamineeRole, string> = {
@@ -270,6 +307,7 @@ interface QuizScreenElements {
   timeoutBanner: HTMLElement;
   submitButton: HTMLButtonElement;
   submitLabel: HTMLElement;
+  jumpUnansweredButton: HTMLButtonElement;
 }
 
 const getQuizScreenElements = (): QuizScreenElements => ({
@@ -283,6 +321,7 @@ const getQuizScreenElements = (): QuizScreenElements => ({
   timeoutBanner: getRequiredElement('quiz-timeout-banner'),
   submitButton: getRequiredElement<HTMLButtonElement>('quiz-submit-button'),
   submitLabel: getRequiredElement('quiz-submit-label'),
+  jumpUnansweredButton: getRequiredElement<HTMLButtonElement>('quiz-jump-unanswered-button'),
 });
 
 interface ResultScreenElements {
@@ -328,8 +367,9 @@ const readExamineeInputValues = (): ExamineeInputValues => ({
 });
 
 /**
- * 「採点」／「回答終了」ボタン押下時の処理（9-4章, 10章, 11章）：入力欄を無効化→
- * submitResultへ送信→受験者区分に応じて結果画面／終了画面へ切り替えて表示する。
+ * 「採点」／「回答終了」ボタン押下時の処理（9-4章, 10章, 11章）：submitResultへ送信→
+ * 受験者区分に応じて結果画面／終了画面へ切り替えて表示する。
+ * 送信に失敗した場合は false を返す（呼び出し側で再試行できるよう画面状態は変更しない）。
  */
 const finishExam = async (
   role: ExamineeRole,
@@ -337,7 +377,7 @@ const finishExam = async (
   quizElements: QuizScreenElements,
   elapsedSeconds: number,
   isTimedOut: boolean,
-): Promise<void> => {
+): Promise<boolean> => {
   const payload: AnswerPayload = {
     examinee: {
       role,
@@ -357,7 +397,7 @@ const finishExam = async (
     window.alert('採点結果の送信に失敗しました。時間をおいて再度お試しください。');
     // eslint-disable-next-line no-console
     console.error('submitResult failed', error);
-    return;
+    return false;
   }
 
   quizElements.screen.style.display = 'none';
@@ -370,7 +410,7 @@ const finishExam = async (
     finishElements.duration.textContent = durationText;
     finishElements.recordedAt.textContent = recordedAt;
     finishElements.screen.style.display = '';
-    return;
+    return true;
   }
 
   const resultElements = getResultScreenElements();
@@ -382,6 +422,7 @@ const finishExam = async (
   resultElements.choiceSummary.textContent = `選択式${scoringResult.choiceQuestionCount}問中 ${scoringResult.choiceCorrectCount}問 正解`;
   renderCategoryScoreTable(resultElements.categoryTableBody, scoringResult.categoryScores);
   resultElements.screen.style.display = '';
+  return true;
 };
 
 /**
@@ -433,6 +474,16 @@ const startExam = async (): Promise<void> => {
   );
   updateProgress(quizElements, 0, questions.length);
 
+  quizElements.jumpUnansweredButton.addEventListener('click', () => {
+    jumpToFirstUnanswered(quizElements.questionsContainer, answeredQuestionIds);
+  });
+
+  // 可用性（12章）：タイマー動作中の再読み込みは回答内容を保持しないため、離脱前に警告する。
+  const warnBeforeUnload = (event: BeforeUnloadEvent): void => {
+    event.preventDefault();
+  };
+  window.addEventListener('beforeunload', warnBeforeUnload);
+
   let elapsedSeconds = 0;
   let isTimedOut = false;
 
@@ -448,15 +499,22 @@ const startExam = async (): Promise<void> => {
   });
   timer.start();
 
-  quizElements.submitButton.addEventListener(
-    'click',
-    () => {
+  // 送信に失敗した場合は操作を復元し、再試行できるようにする（黙って失敗させない）。
+  const attemptSubmit = async (): Promise<void> => {
+    quizElements.submitButton.disabled = true;
+    const succeeded = await finishExam(role, examineeValues, quizElements, elapsedSeconds, isTimedOut);
+    if (succeeded) {
       timer.stop();
-      disableAllInputs(quizElements.questionsContainer);
-      void finishExam(role, examineeValues, quizElements, elapsedSeconds, isTimedOut);
-    },
-    { once: true },
-  );
+      disableQuizControls(quizElements);
+      window.removeEventListener('beforeunload', warnBeforeUnload);
+      return;
+    }
+    quizElements.submitButton.disabled = false;
+  };
+
+  quizElements.submitButton.addEventListener('click', () => {
+    void attemptSubmit();
+  });
 };
 
 /** 開始画面の「テスト開始」ボタンにクリックハンドラを配線する。 */

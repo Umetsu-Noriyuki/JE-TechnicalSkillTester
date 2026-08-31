@@ -18,7 +18,7 @@
         <div id="quiz-progress-bar-fill" class="quiz-progress-bar-fill" style="width: 0%"></div>
       </div>
     </div>
-    <button class="btn btn-secondary" type="button">未回答の問題へ移動</button>
+    <button id="quiz-jump-unanswered-button" class="btn btn-secondary" type="button">未回答の問題へ移動</button>
   </div>
 
   <!-- 制限時間到達時にJSで表示するバナー（現時点では静的マークアップのみ、表示切替は未実装） -->
@@ -180,12 +180,12 @@ GROUP BY dept_id;</pre
     <div style="display: flex; flex-direction: column; gap: 14px; position: sticky; top: 24px; align-self: start">
       <div class="text-muted" style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase">問題一覧</div>
       <div id="quiz-nav-grid" class="quiz-nav-grid">
-        <!-- 30問分のセル（回答済み／未回答の表示）は将来のクライアントJS実装でここへ描画する -->
-        <span class="quiz-nav-cell is-answered">1</span>
-        <span class="quiz-nav-cell is-answered">2</span>
-        <span class="quiz-nav-cell">3</span>
-        <span class="quiz-nav-cell is-answered">4</span>
-        <span class="quiz-nav-cell is-answered">5</span>
+        <!-- 起動時、実際の出題数分のボタンにJSが差し替える -->
+        <button type="button" class="quiz-nav-cell is-answered">1</button>
+        <button type="button" class="quiz-nav-cell is-answered">2</button>
+        <button type="button" class="quiz-nav-cell">3</button>
+        <button type="button" class="quiz-nav-cell is-answered">4</button>
+        <button type="button" class="quiz-nav-cell is-answered">5</button>
       </div>
       <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px" class="text-muted">
         <span>■ 回答済み ／ □ 未回答</span>

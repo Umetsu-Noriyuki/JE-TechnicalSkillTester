@@ -5,6 +5,7 @@ import type { QuizQuestion } from '../../../shared/types/quiz_question';
 import {
   collectAnswers,
   formatRecordedAt,
+  jumpToFirstUnanswered,
   populateScoreCmyk,
   renderCategoryScoreTable,
   renderNavGrid,
@@ -152,7 +153,7 @@ describe('updateProgress', () => {
 });
 
 describe('renderNavGrid / updateNavGridAnsweredState', () => {
-  test('問題数分のセルを描画し、クリックでonNavigateが呼ばれる', () => {
+  test('問題数分のボタンを描画し、クリックでonNavigateが呼ばれる（キーボード操作対応のためbutton要素とする）', () => {
     const container = document.createElement('div');
     const onNavigate = vi.fn();
 
@@ -160,6 +161,7 @@ describe('renderNavGrid / updateNavGridAnsweredState', () => {
 
     const cells = container.querySelectorAll('.quiz-nav-cell');
     expect(cells).toHaveLength(3);
+    expect(cells[1]?.tagName).toBe('BUTTON');
     expect(cells[1]?.textContent).toBe('2');
 
     cells[1]?.dispatchEvent(new Event('click', { bubbles: true }));
@@ -198,18 +200,56 @@ describe('updateTimerDisplay', () => {
 });
 
 describe('showTimeoutState', () => {
-  test('バナーを表示し、設問内の入力欄を全て操作不可にする', () => {
+  test('バナーを表示し、設問内の入力欄・問題一覧・未回答へ移動ボタンを全て操作不可にする（9-3章：採点ボタン以外は不可）', () => {
     const timeoutBanner = document.createElement('div');
     timeoutBanner.style.display = 'none';
 
     const questionsContainer = document.createElement('div');
     questionsContainer.innerHTML = '<input type="radio" /><textarea></textarea>';
 
-    showTimeoutState({ timeoutBanner, questionsContainer });
+    const navGrid = document.createElement('div');
+    renderNavGrid(navGrid, ['q1', 'q2'], vi.fn());
+
+    const jumpUnansweredButton = document.createElement('button');
+
+    showTimeoutState({ timeoutBanner, questionsContainer, navGrid, jumpUnansweredButton });
 
     expect(timeoutBanner.style.display).toBe('');
     expect(questionsContainer.querySelector('input')?.hasAttribute('disabled')).toBe(true);
     expect(questionsContainer.querySelector('textarea')?.hasAttribute('disabled')).toBe(true);
+    expect(navGrid.querySelectorAll('button:disabled')).toHaveLength(2);
+    expect(jumpUnansweredButton.disabled).toBe(true);
+  });
+});
+
+describe('jumpToFirstUnanswered', () => {
+  let container: HTMLDivElement;
+  let alertSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
+  });
+
+  test('最初に見つかった未回答の設問へスクロールする', () => {
+    renderQuizQuestions(container, [choiceQuestion, textQuestion], vi.fn());
+    const scrollSpy = vi.fn();
+    const targetEl = container.querySelector('[data-question-id="q-text"]');
+    if (targetEl === null) throw new Error('target not found');
+    (targetEl as HTMLElement).scrollIntoView = scrollSpy;
+
+    jumpToFirstUnanswered(container, new Set(['q-choice']));
+
+    expect(scrollSpy).toHaveBeenCalled();
+    expect(alertSpy).not.toHaveBeenCalled();
+  });
+
+  test('未回答の設問がない場合は通知する', () => {
+    renderQuizQuestions(container, [choiceQuestion], vi.fn());
+
+    jumpToFirstUnanswered(container, new Set(['q-choice']));
+
+    expect(alertSpy).toHaveBeenCalledWith('未回答の問題はありません。');
   });
 });
 
