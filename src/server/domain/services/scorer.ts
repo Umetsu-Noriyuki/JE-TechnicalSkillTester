@@ -1,5 +1,5 @@
+import type { QuestionAnswer } from '../../../shared/types/answer_payload';
 import type { CategoryScore, ScoringResult } from '../../../shared/types/scoring_result';
-import type { QuestionAnswer } from '../models/answer_payload';
 import type { Question } from '../models/question';
 
 const roundPercentage = (numerator: number, denominator: number): number =>

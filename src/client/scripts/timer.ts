@@ -16,6 +16,13 @@ export const isRemainingTimeWarning = (elapsedSeconds: number): boolean =>
 /** 制限時間に達したかどうかを判定する（9-1章）。 */
 export const isTimeUp = (elapsedSeconds: number): boolean => elapsedSeconds >= EXAM_DURATION_SECONDS;
 
+/** 所要時間を「27分41秒」のような日本語形式で整形する（結果画面・終了画面, 10-4章）。 */
+export const formatDurationJapanese = (totalSeconds: number): string => {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}分${seconds}秒`;
+};
+
 export interface ExamTimerHandlers {
   onTick: (elapsedSeconds: number) => void;
   onTimeUp: () => void;

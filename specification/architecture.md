@@ -42,17 +42,18 @@ src/
 │   │   ├── models/
 │   │   │   ├── __tests__/
 │   │   │   ├── question.ts             # Question（問題マスタ1行分の内部表現、正解情報を含む）
-│   │   │   ├── answer_payload.ts       # submitResultが受け取る回答データの型（10-1章）
 │   │   │   └── exam_result_record.ts   # 「受験結果」シート1行分の型（11-2章）
 │   │   │
 │   │   └── services/
 │   │       ├── __tests__/
 │   │       │   ├── question_selector.test.ts
 │   │       │   ├── choice_shuffler.test.ts
-│   │       │   └── scorer.test.ts
+│   │       │   ├── scorer.test.ts
+│   │       │   └── answer_detail_builder.test.ts
 │   │       ├── question_selector.ts    # 区分別抽出・記述式按分ロジック（7-2, 7-3, 7-4章）
 │   │       ├── choice_shuffler.ts      # 選択肢シャッフルと正誤対応の保持（8章）
-│   │       └── scorer.ts               # 採点・正解率算出（10-2, 10-3章）
+│   │       ├── scorer.ts               # 採点・正解率算出（10-2, 10-3章）
+│   │       └── answer_detail_builder.ts # 受験結果シートM列用の回答詳細生成（11-2章）
 │   │
 │   ├── repositories/                   # スプレッドシートアクセス（Repositoryパターン）
 │   │   ├── __tests__/
@@ -102,6 +103,7 @@ src/
     ├── types/
     │   ├── examinee_role.ts            # ExamineeRole = 'applicant' | 'newhire' | 'junior'（4章）
     │   ├── quiz_question.ts            # クライアントに返す出題データの型（正解情報を含まない）
+    │   ├── answer_payload.ts           # submitResultへクライアントが送信する回答データの型（10-1章）
     │   └── scoring_result.ts           # クライアントに返す採点結果の型（10-4章）
     └── constants.ts                    # EXAM_DURATION_SEC, TOTAL_QUESTION_COUNT, CATEGORY_QUOTA等
 ```

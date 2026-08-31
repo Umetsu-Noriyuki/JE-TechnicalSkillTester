@@ -1,5 +1,16 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { createExamTimer, formatElapsedTime, isRemainingTimeWarning, isTimeUp } from '../timer';
+import { createExamTimer, formatDurationJapanese, formatElapsedTime, isRemainingTimeWarning, isTimeUp } from '../timer';
+
+describe('formatDurationJapanese', () => {
+  test.each([
+    [0, '0分0秒'],
+    [61, '1分1秒'],
+    [1661, '27分41秒'],
+    [1800, '30分0秒'],
+  ])('%i秒 -> %s', (seconds, expected) => {
+    expect(formatDurationJapanese(seconds)).toBe(expected);
+  });
+});
 
 describe('formatElapsedTime', () => {
   test.each([

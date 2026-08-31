@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import type { QuestionAnswer } from '../../models/answer_payload';
+import type { QuestionAnswer } from '../../../../shared/types/answer_payload';
 import type { Question } from '../../models/question';
 import { scoreExam } from '../scorer';
 

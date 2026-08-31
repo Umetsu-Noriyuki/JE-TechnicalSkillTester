@@ -30,8 +30,9 @@
   </div>
 
   <div class="quiz-body">
-    <div id="quiz-questions" class="quiz-questions">
-      <!-- 問題データ取得APIが未実装のため、実際の30問はサーバー側実装後にここへ動的展開する -->
+    <div class="quiz-questions">
+    <div id="quiz-questions" class="quiz-questions-list">
+      <!-- 起動時、実際の出題内容でJSがこのコンテナの中身のみを差し替える（フッターは対象外） -->
       <div class="quiz-question">
         <div class="quiz-question-number">Q1</div>
         <div class="quiz-question-body">
@@ -156,25 +157,24 @@ GROUP BY dept_id;</pre
           </div>
         </div>
       </div>
+    </div>
 
-      <p class="text-muted" style="margin: 0; font-size: 13px">— Q4 〜 Q29 は同じ形式で続きます —</p>
-
-      <div style="display: flex; flex-direction: column; gap: 18px; padding-top: 8px">
-        <h3 style="margin: 0">以上で全30問です</h3>
-        <p style="margin: 0; font-size: 15px">
-          未回答の問題が <span id="quiz-unanswered-count" style="color: var(--color-accent-2-700)">30問</span>
-          あります。回答内容をご確認のうえ、<span id="quiz-submit-label">「採点」</span>ボタンを押してください。
-        </p>
-        <div style="display: flex; align-items: center; gap: 16px">
-          <button id="quiz-submit-button" class="btn btn-primary" type="button" style="min-height: 44px; font-size: 15px; padding-inline: 28px">
-            採点
-          </button>
-          <span class="text-muted" style="font-size: 12px">押下後は回答を変更できません。</span>
-        </div>
-        <p class="text-muted" style="margin: 0; font-size: 12px">
-          ※ 入社希望者の画面では、このボタンが「回答終了」となり、正解率は表示されません。
-        </p>
+    <div style="display: flex; flex-direction: column; gap: 18px; padding-top: 8px">
+      <h3 style="margin: 0">以上で全30問です</h3>
+      <p style="margin: 0; font-size: 15px">
+        未回答の問題が <span id="quiz-unanswered-count" style="color: var(--color-accent-2-700)">30問</span>
+        あります。回答内容をご確認のうえ、<span id="quiz-submit-label">「採点」</span>ボタンを押してください。
+      </p>
+      <div style="display: flex; align-items: center; gap: 16px">
+        <button id="quiz-submit-button" class="btn btn-primary" type="button" style="min-height: 44px; font-size: 15px; padding-inline: 28px">
+          採点
+        </button>
+        <span class="text-muted" style="font-size: 12px">押下後は回答を変更できません。</span>
       </div>
+      <p class="text-muted" style="margin: 0; font-size: 12px">
+        ※ 入社希望者の画面では、このボタンが「回答終了」となり、正解率は表示されません。
+      </p>
+    </div>
     </div>
 
     <div style="display: flex; flex-direction: column; gap: 14px; position: sticky; top: 24px; align-self: start">

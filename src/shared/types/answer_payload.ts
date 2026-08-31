@@ -1,4 +1,4 @@
-import type { ExamineeRole } from '../../../shared/types/examinee_role';
+import type { ExamineeRole } from './examinee_role';
 
 export interface QuestionAnswer {
   questionId: string;
@@ -18,7 +18,8 @@ export interface ExamineeInfo {
 }
 
 /**
- * submitResult(payload) が受け取る回答データ（10-1章）。
+ * submitResult(payload) が受け取る回答データ（10-1章）。クライアントが送信するデータのため
+ * shared/types に置く（server/domain/models は正解情報などクライアントに渡さない内部専用の型）。
  */
 export interface AnswerPayload {
   examinee: ExamineeInfo;
