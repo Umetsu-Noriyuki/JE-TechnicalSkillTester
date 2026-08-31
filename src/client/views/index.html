@@ -7,10 +7,10 @@
   </head>
   <body data-role="<?= role ?>">
     <div style="min-height: 100vh; padding: 24px 16px">
-      <?!= include('client/views/partials/start_screen'); ?>
+      <?!= include('client/views/partials/start_screen', { role: role }); ?>
       <?!= include('client/views/partials/quiz_screen'); ?>
       <? if (role !== 'applicant') { ?>
-        <?!= include('client/views/partials/result_screen'); ?>
+        <?!= include('client/views/partials/result_screen', { role: role }); ?>
       <? } else { ?>
         <?!= include('client/views/partials/finish_screen'); ?>
       <? } ?>
