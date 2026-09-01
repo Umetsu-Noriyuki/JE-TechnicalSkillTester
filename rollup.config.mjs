@@ -30,8 +30,13 @@ const createPlugins = () => [
 const serverConfig = {
   input: 'src/index.ts',
   output: {
+    // 'iife' は使わない: google.script.run はサーバー側ファイルをソース解析して呼び出し可能な
+    // 関数一覧を検出するため、doGet 等がトップレベルの function 宣言として存在しないと
+    // （IIFEで包まれてスコープが1段ネストすると）google.script.run から認識されない。
+    // src/index.ts はexport・外部importを持たないため、'cjs' 形式でもラッパーは生成されず、
+    // 結果としてトップレベルのfunction宣言がそのまま出力される。
     file: 'dist/index.js',
-    format: 'iife',
+    format: 'cjs',
   },
   plugins: createPlugins(),
 };

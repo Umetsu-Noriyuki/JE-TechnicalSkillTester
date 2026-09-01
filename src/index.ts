@@ -1,9 +1,35 @@
-import { doGet } from './server/entry_points/do_get';
-import { getQuizQuestions } from './server/entry_points/get_quiz_questions';
-import { include } from './server/entry_points/include';
-import { submitResult } from './server/entry_points/submit_result';
+import { doGet as doGetImpl } from './server/entry_points/do_get';
+import { getQuizQuestions as getQuizQuestionsImpl } from './server/entry_points/get_quiz_questions';
+import { include as includeImpl } from './server/entry_points/include';
+import { submitResult as submitResultImpl } from './server/entry_points/submit_result';
+import type { AnswerPayload } from './shared/types/answer_payload';
+import type { QuizQuestion } from './shared/types/quiz_question';
+import type { ScoringResult } from './shared/types/scoring_result';
 
-(globalThis as Record<string, unknown>).doGet = doGet;
-(globalThis as Record<string, unknown>).include = include;
-(globalThis as Record<string, unknown>).getQuizQuestions = getQuizQuestions;
-(globalThis as Record<string, unknown>).submitResult = submitResult;
+/**
+ * GASのグローバル関数として認識させるためのエントリーポイント。
+ *
+ * google.script.run（および「実行する関数」の選択リスト）は、サーバー側ファイルの
+ * ソースを解析してトップレベルの `function 名前(...) {}` 宣言を検出することで
+ * 呼び出し可能な関数を認識する。`globalThis.foo = foo` のような実行時の代入や、
+ * IIFEでスコープが1段ネストした状態（Rollupの iife 出力形式）では認識されない。
+ * そのため、ここでは各実装（アロー関数）をラップするトップレベルの function 宣言を
+ * 用意する。doGet はGASのWebリクエストルーティングが直接globalThisを参照するため
+ * 本来この制約を受けないが、一貫性のためここに含める。
+ */
+
+function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.HTML.HtmlOutput {
+  return doGetImpl(e);
+}
+
+function include(filename: string, data?: Readonly<Record<string, unknown>>): string {
+  return includeImpl(filename, data);
+}
+
+function getQuizQuestions(role: string): QuizQuestion[] {
+  return getQuizQuestionsImpl(role);
+}
+
+function submitResult(payload: AnswerPayload): ScoringResult {
+  return submitResultImpl(payload);
+}
