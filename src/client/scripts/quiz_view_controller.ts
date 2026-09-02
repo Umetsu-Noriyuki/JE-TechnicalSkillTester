@@ -363,7 +363,7 @@ const getFinishScreenElements = (): FinishScreenElements => ({
 const readExamineeInputValues = (): ExamineeInputValues => ({
   name: getRequiredElement<HTMLInputElement>('examinee-name').value,
   employeeNumber: (document.getElementById('examinee-number') as HTMLInputElement | null)?.value ?? null,
-  department: (document.getElementById('examinee-department') as HTMLSelectElement | null)?.value ?? null,
+  department: (document.getElementById('examinee-department') as HTMLInputElement | null)?.value ?? null,
 });
 
 /**
