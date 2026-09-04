@@ -15,7 +15,7 @@
         </span>
         <h1 style="font-size: 40px; margin: 20px 0 0">お疲れさまでした。採点結果をお知らせします。</h1>
         <p style="margin: 16px 0 0; max-width: 52ch; font-size: 16px">
-          この結果は、苦手分野を把握して今後の学習計画に反映するために記録されます。記述式の回答は後日、担当者が模範回答と照らして確認します。
+          この結果は、苦手分野を把握して今後の学習計画に反映するために記録されます。記述式の回答はGemini APIによる自動採点結果を反映しています。
         </p>
         <dl class="info-list" style="grid-template-columns: 110px minmax(0, 1fr); row-gap: 14px; font-size: 15px">
           <dt>氏名</dt>
@@ -39,9 +39,9 @@
           </div>
           <span style="font-size: 40px; font-weight: 600">%</span>
         </div>
-        <p id="result-choice-summary" style="margin: 12px 0 0; font-size: 15px">選択式の採点結果は未計算です。</p>
+        <p id="result-choice-summary" style="margin: 12px 0 0; font-size: 15px">採点結果は未計算です。</p>
         <p class="text-muted" style="margin: 0; font-size: 13px; max-width: 40ch">
-          記述式は自動採点の対象外のため、正解率には含まれていません。
+          選択式は正誤判定、記述式はGemini APIによる採点結果（0〜100点）を、それぞれ得点化して正解率に反映しています。
         </p>
       </div>
     </div>
@@ -53,7 +53,7 @@
           <thead>
             <tr>
               <th style="width: 220px">区分</th>
-              <th style="width: 120px">選択式 正解／出題</th>
+              <th style="width: 120px">得点／出題数</th>
               <th style="width: 300px">正解率</th>
               <th style="width: 110px">記述式 提出</th>
             </tr>
@@ -71,7 +71,7 @@
     <div style="max-width: 60ch">
       <h4 style="margin: 0 0 8px">この後の流れ</h4>
       <p style="margin: 0; font-size: 15px">
-        結果は自動的に記録されました。記述式の回答内容の確認結果を含めて、後日あらためて振り返りの機会を設けます。この画面は閉じていただいて構いません。
+        結果は自動的に記録されました。今後の学習計画の参考にしてください。この画面は閉じていただいて構いません。
       </p>
     </div>
   </div>

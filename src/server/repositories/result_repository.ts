@@ -8,7 +8,7 @@ const formatCategoryCell = (record: ExamResultRecord, categoryName: string): str
   if (score === undefined) {
     return '-';
   }
-  return `${score.correctRate}% (${score.choiceCorrectCount}/${score.choiceQuestionCount})`;
+  return `${score.correctRate}% (${score.totalScore}/${score.questionCount * 100}点)`;
 };
 
 const formatDuration = (record: ExamResultRecord): string => {

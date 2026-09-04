@@ -274,7 +274,7 @@ export const renderCategoryScoreTable = (tableBody: HTMLElement, categoryScores:
     const row = createEl('tr');
     row.append(
       createEl('td', { text: score.categoryName }),
-      createEl('td', { text: `${score.choiceCorrectCount} / ${score.choiceQuestionCount}` }),
+      createEl('td', { text: `${score.totalScore} / ${score.questionCount * 100}` }),
       createEl('td', { text: `${score.correctRate}%` }),
       createEl('td', { text: String(score.descriptiveSubmittedCount) }),
     );
@@ -419,7 +419,7 @@ const finishExam = async (
   resultElements.duration.textContent = durationText;
   resultElements.recordedAt.textContent = recordedAt;
   populateScoreCmyk(resultElements.scoreCmyk, scoringResult.overallCorrectRate);
-  resultElements.choiceSummary.textContent = `選択式${scoringResult.choiceQuestionCount}問中 ${scoringResult.choiceCorrectCount}問 正解`;
+  resultElements.choiceSummary.textContent = `全${scoringResult.questionCount}問の得点合計 ${scoringResult.totalScore}点（選択式は正誤、記述式はGemini採点結果を含む）`;
   renderCategoryScoreTable(resultElements.categoryTableBody, scoringResult.categoryScores);
   resultElements.screen.style.display = '';
   return true;

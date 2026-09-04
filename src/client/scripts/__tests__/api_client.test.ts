@@ -52,8 +52,8 @@ describe('submitExamResult', () => {
   test('成功時は採点結果でPromiseを解決する', async () => {
     const scoringResult: ScoringResult = {
       overallCorrectRate: 80,
-      choiceQuestionCount: 5,
-      choiceCorrectCount: 4,
+      questionCount: 5,
+      totalScore: 400,
       categoryScores: [],
     };
 

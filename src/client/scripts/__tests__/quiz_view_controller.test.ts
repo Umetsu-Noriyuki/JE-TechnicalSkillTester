@@ -305,14 +305,14 @@ describe('renderCategoryScoreTable', () => {
   test('区分ごとの正解率行を描画する', () => {
     const tableBody = document.createElement('tbody');
     const categoryScores: CategoryScore[] = [
-      { categoryName: 'コーディング', choiceQuestionCount: 4, choiceCorrectCount: 3, correctRate: 75, descriptiveSubmittedCount: 2 },
+      { categoryName: 'コーディング', questionCount: 4, totalScore: 300, correctRate: 75, descriptiveSubmittedCount: 2 },
     ];
 
     renderCategoryScoreTable(tableBody, categoryScores);
 
     const cells = tableBody.querySelectorAll('td');
     expect(cells[0]?.textContent).toBe('コーディング');
-    expect(cells[1]?.textContent).toBe('3 / 4');
+    expect(cells[1]?.textContent).toBe('300 / 400');
     expect(cells[2]?.textContent).toBe('75%');
     expect(cells[3]?.textContent).toBe('2');
   });

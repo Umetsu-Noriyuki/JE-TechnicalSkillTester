@@ -14,3 +14,9 @@ export const LOCK_WAIT_MILLISECONDS = 30000;
  * ここでのみ区分名を列挙する。
  */
 export const CATEGORY_NAMES = ['コーディング', 'SQL', 'プログラミング技法', 'ロジカルシンキング', '行動指針'] as const;
+
+/** 記述式の採点（10-2章）に使用するGeminiのモデル名。実装時点の選定であり、変更容易な定数として分離する。 */
+export const GEMINI_MODEL = 'gemini-2.5-flash';
+
+/** Gemini API（generateContent）のベースURL。末尾に `/{model}:generateContent?key=...` を付与して使用する。 */
+export const GEMINI_API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';

@@ -8,54 +8,45 @@ export interface AnswerDetail {
   format: QuestionFormat;
   /** 選択式：選択した選択肢の文言（未回答なら空文字）／記述式：入力内容 */
   answerContent: string;
+  /** 0〜100（10-2章）。選択式：正解100点/不正解0点、記述式：Gemini採点結果。 */
+  score: number;
   /** 選択式のみ。 */
   isCorrect?: boolean;
   /** 記述式のみ。 */
   modelAnswer?: string;
+  /** 記述式のみ。Geminiによる採点フィードバック。 */
+  feedback?: string;
 }
 
-/**
- * 「受験結果」シートM列に格納する、各設問の回答詳細を生成する（11-2章）。
- * questions に存在しない questionId の回答は無視する。
- */
-export const buildAnswerDetails = (
-  questions: readonly Question[],
-  answers: readonly QuestionAnswer[],
-): AnswerDetail[] => {
-  const questionById = new Map(questions.map((question) => [question.id, question]));
-  const details: AnswerDetail[] = [];
+/** 選択式の回答詳細を作る（11-2章M列）。score は scoreChoiceAnswer の結果を渡すこと。 */
+export const buildChoiceAnswerDetail = (question: Question, answer: QuestionAnswer, score: number): AnswerDetail => {
+  const selectedText =
+    answer.selectedChoiceNumber !== undefined ? (question.choices?.[answer.selectedChoiceNumber - 1] ?? '') : '';
 
-  for (const answer of answers) {
-    const question = questionById.get(answer.questionId);
-    if (question === undefined) {
-      continue;
-    }
-
-    if (question.format === 'choice') {
-      const selectedText =
-        answer.selectedChoiceNumber !== undefined
-          ? (question.choices?.[answer.selectedChoiceNumber - 1] ?? '')
-          : '';
-      details.push({
-        questionId: question.id,
-        category: question.category,
-        subCategory: question.subCategory,
-        format: 'choice',
-        answerContent: selectedText,
-        isCorrect:
-          answer.selectedChoiceNumber !== undefined && answer.selectedChoiceNumber === question.correctChoiceNumber,
-      });
-    } else {
-      details.push({
-        questionId: question.id,
-        category: question.category,
-        subCategory: question.subCategory,
-        format: 'text',
-        answerContent: answer.descriptiveAnswer ?? '',
-        modelAnswer: question.modelAnswer,
-      });
-    }
-  }
-
-  return details;
+  return {
+    questionId: question.id,
+    category: question.category,
+    subCategory: question.subCategory,
+    format: 'choice',
+    answerContent: selectedText,
+    score,
+    isCorrect: score === 100,
+  };
 };
+
+/** 記述式の回答詳細を作る（11-2章M列）。score・feedback は scoreDescriptiveAnswer の結果を渡すこと。 */
+export const buildDescriptiveAnswerDetail = (
+  question: Question,
+  answer: QuestionAnswer,
+  score: number,
+  feedback: string,
+): AnswerDetail => ({
+  questionId: question.id,
+  category: question.category,
+  subCategory: question.subCategory,
+  format: 'text',
+  answerContent: answer.descriptiveAnswer ?? '',
+  score,
+  modelAnswer: question.modelAnswer,
+  feedback,
+});

@@ -49,11 +49,13 @@ src/
 │   │       │   ├── question_selector.test.ts
 │   │       │   ├── choice_shuffler.test.ts
 │   │       │   ├── scorer.test.ts
-│   │       │   └── answer_detail_builder.test.ts
+│   │       │   ├── answer_detail_builder.test.ts
+│   │       │   └── descriptive_scorer.test.ts
 │   │       ├── question_selector.ts    # 区分別抽出・記述式按分ロジック（7-2, 7-3, 7-4章）
 │   │       ├── choice_shuffler.ts      # 選択肢シャッフルと正誤対応の保持（8章）
-│   │       ├── scorer.ts               # 採点・正解率算出（10-2, 10-3章）
-│   │       └── answer_detail_builder.ts # 受験結果シートM列用の回答詳細生成（11-2章）
+│   │       ├── scorer.ts               # 得点の集計・正解率算出（純粋関数、10-3章）
+│   │       ├── answer_detail_builder.ts # 受験結果シートM列用の回答詳細生成（11-2章）
+│   │       └── descriptive_scorer.ts   # 記述式のGemini採点（例外的にinfrastructureへ依存、10-2章）
 │   │
 │   ├── repositories/                   # スプレッドシートアクセス（Repositoryパターン）
 │   │   ├── __tests__/
@@ -66,15 +68,17 @@ src/
 │   │   ├── __tests__/
 │   │   │   ├── spreadsheet_client.test.ts
 │   │   │   ├── lock_service_client.test.ts
-│   │   │   └── script_properties_client.test.ts
+│   │   │   ├── script_properties_client.test.ts
+│   │   │   └── gemini_client.test.ts
 │   │   ├── spreadsheet_client.ts       # SpreadsheetApp.openById等のラッパー
 │   │   ├── lock_service_client.ts      # LockService.getScriptLock()のラッパー（11-3章）
-│   │   └── script_properties_client.ts # PropertiesServiceラッパー（SHEET_ID等の機密/環境値取得）
+│   │   ├── script_properties_client.ts # PropertiesServiceラッパー（SPREADSHEET_ID/GEMINI_API_KEY等の機密/環境値取得）
+│   │   └── gemini_client.ts            # UrlFetchApp経由でのGemini API呼び出し（10-2章）
 │   │
 │   └── config/
 │       ├── __tests__/
 │       │   └── constants.test.ts
-│       └── constants.ts                # シート名・LOCK待機時間等、サーバー内部専用の定数
+│       └── constants.ts                # シート名・LOCK待機時間・Geminiモデル名等、サーバー内部専用の定数
 │
 ├── client/                             # フロントエンド（HtmlServiceで配信するHTML／クライアントJS）
 │   ├── views/                          # HTMLテンプレート本体
@@ -116,7 +120,8 @@ src/
 |---|---|---|
 | `server/entry_points` | GASが直接呼び出す公開関数の受け口。入出力の変換とオーケストレーションに専念し、業務ロジック自体は持たない | `domain`, `repositories`, `shared` |
 | `server/domain/models` | サーバー内部で使う型定義（クライアントに渡さない情報を含む） | なし（型のみ） |
-| `server/domain/services` | 抽出・シャッフル・採点などの業務ロジック。GAS APIに一切依存しない純粋関数とする | `domain/models`, `shared` |
+| `server/domain/services` | 抽出・シャッフル・採点などの業務ロジック。原則GAS APIに依存しない純粋関数とする | `domain/models`, `shared` |
+| （例外）`descriptive_scorer.ts` | 記述式の採点にGemini APIという外部依存が必須のため、上記の原則の例外として`infrastructure`への依存を許可する（`repositories`がスプレッドシートアクセスのために`infrastructure`へ依存するのと同様の位置づけ） | `infrastructure`, `shared` |
 | `server/repositories` | スプレッドシートに対するCRUD相当の操作をカプセル化 | `infrastructure`, `domain/models` |
 | `server/infrastructure` | `SpreadsheetApp` / `LockService` / `PropertiesService` など、GAS組み込みAPIの薄いラッパー | GAS組み込みAPIのみ |
 | `server/config` | サーバー内部専用の定数（シート名など） | なし |

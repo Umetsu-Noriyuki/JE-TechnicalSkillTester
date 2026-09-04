@@ -1,118 +1,92 @@
 import { describe, expect, test } from 'vitest';
-import type { QuestionAnswer } from '../../../../shared/types/answer_payload';
-import type { Question } from '../../models/question';
-import { scoreExam } from '../scorer';
+import { aggregateScores, scoreChoiceAnswer, type QuestionScoreEntry } from '../scorer';
 
-const buildChoiceQuestion = (id: string, category: string, correctChoiceNumber: number): Question => ({
-  id,
-  category,
-  subCategory: 'サブ区分',
-  format: 'choice',
-  text: `${id}の問題文`,
-  choices: ['A', 'B', 'C', 'D'],
-  correctChoiceNumber,
+describe('scoreChoiceAnswer', () => {
+  test('選択した番号が正解番号と一致する場合は100点', () => {
+    expect(scoreChoiceAnswer(2, 2)).toBe(100);
+  });
+
+  test('選択した番号が正解番号と一致しない場合は0点', () => {
+    expect(scoreChoiceAnswer(2, 1)).toBe(0);
+  });
+
+  test('未回答（selectedChoiceNumberがundefined）の場合は0点', () => {
+    expect(scoreChoiceAnswer(2, undefined)).toBe(0);
+  });
 });
 
-const buildTextQuestion = (id: string, category: string): Question => ({
-  id,
-  category,
-  subCategory: 'サブ区分',
-  format: 'text',
-  text: `${id}の問題文`,
-  modelAnswer: '模範回答',
-});
-
-describe('scoreExam', () => {
-  test('選択式は正解番号と一致した場合のみ正解として扱う', () => {
-    const questions = [buildChoiceQuestion('q1', 'コーディング', 2), buildChoiceQuestion('q2', 'コーディング', 1)];
-    const answers: QuestionAnswer[] = [
-      { questionId: 'q1', selectedChoiceNumber: 2 },
-      { questionId: 'q2', selectedChoiceNumber: 3 },
+describe('aggregateScores', () => {
+  test('区分ごとの得点合計・出題数から正解率を四捨五入して算出する', () => {
+    const entries: QuestionScoreEntry[] = [
+      { category: 'コーディング', score: 100 },
+      { category: 'コーディング', score: 0 },
+      { category: 'コーディング', score: 80, isDescriptiveSubmitted: true },
     ];
 
-    const result = scoreExam(questions, answers);
+    const result = aggregateScores(entries);
 
-    expect(result.choiceQuestionCount).toBe(2);
-    expect(result.choiceCorrectCount).toBe(1);
-    expect(result.overallCorrectRate).toBe(50);
-  });
-
-  test('未回答の選択式は出題数に含めるが正解数には含めない', () => {
-    const questions = [buildChoiceQuestion('q1', 'コーディング', 1)];
-    const answers: QuestionAnswer[] = [{ questionId: 'q1' }];
-
-    const result = scoreExam(questions, answers);
-
-    expect(result.choiceQuestionCount).toBe(1);
-    expect(result.choiceCorrectCount).toBe(0);
-  });
-
-  test('記述式は自動採点せず、内容が空でなければ提出数としてカウントする', () => {
-    const questions = [buildTextQuestion('q1', 'SQL'), buildTextQuestion('q2', 'SQL')];
-    const answers: QuestionAnswer[] = [
-      { questionId: 'q1', descriptiveAnswer: '回答内容' },
-      { questionId: 'q2', descriptiveAnswer: '   ' },
-    ];
-
-    const result = scoreExam(questions, answers);
-
-    expect(result.choiceQuestionCount).toBe(0);
-    expect(result.categoryScores[0]).toMatchObject({ categoryName: 'SQL', descriptiveSubmittedCount: 1 });
-  });
-
-  test('区分ごとに正解率・出題数・正解数・記述式提出数を集計する', () => {
-    const questions = [
-      buildChoiceQuestion('cod-1', 'コーディング', 1),
-      buildChoiceQuestion('cod-2', 'コーディング', 1),
-      buildTextQuestion('cod-3', 'コーディング'),
-      buildChoiceQuestion('sql-1', 'SQL', 1),
-    ];
-    const answers: QuestionAnswer[] = [
-      { questionId: 'cod-1', selectedChoiceNumber: 1 },
-      { questionId: 'cod-2', selectedChoiceNumber: 2 },
-      { questionId: 'cod-3', descriptiveAnswer: '回答' },
-      { questionId: 'sql-1', selectedChoiceNumber: 1 },
-    ];
-
-    const result = scoreExam(questions, answers);
-
-    expect(result.categoryScores.find((c) => c.categoryName === 'コーディング')).toEqual({
+    const coding = result.categoryScores.find((c) => c.categoryName === 'コーディング');
+    expect(coding).toEqual({
       categoryName: 'コーディング',
-      choiceQuestionCount: 2,
-      choiceCorrectCount: 1,
-      correctRate: 50,
+      questionCount: 3,
+      totalScore: 180,
+      correctRate: 60, // 180/3 = 60
       descriptiveSubmittedCount: 1,
     });
-    expect(result.categoryScores.find((c) => c.categoryName === 'SQL')).toEqual({
-      categoryName: 'SQL',
-      choiceQuestionCount: 1,
-      choiceCorrectCount: 1,
-      correctRate: 100,
-      descriptiveSubmittedCount: 0,
-    });
-    expect(result.overallCorrectRate).toBe(67);
-    expect(result.choiceQuestionCount).toBe(3);
-    expect(result.choiceCorrectCount).toBe(2);
   });
 
-  test('問題マスタ（出題済み問題）に存在しないquestionIdの回答は無視する', () => {
-    const questions = [buildChoiceQuestion('q1', 'コーディング', 1)];
-    const answers: QuestionAnswer[] = [
-      { questionId: 'q1', selectedChoiceNumber: 1 },
-      { questionId: 'unknown', selectedChoiceNumber: 1 },
+  test('総合正解率は全問題（選択式＋記述式）の得点合計÷出題総数を四捨五入する', () => {
+    const entries: QuestionScoreEntry[] = [
+      { category: 'コーディング', score: 100 },
+      { category: 'コーディング', score: 100 },
+      { category: 'SQL', score: 0 },
     ];
 
-    const result = scoreExam(questions, answers);
+    const result = aggregateScores(entries);
 
-    expect(result.choiceQuestionCount).toBe(1);
+    expect(result.questionCount).toBe(3);
+    expect(result.totalScore).toBe(200);
+    expect(result.overallCorrectRate).toBe(67); // 200/3 = 66.67 -> 67
   });
 
-  test('選択式問題が1問もない場合、正解率は0%とする（0除算を避ける）', () => {
-    const questions = [buildTextQuestion('q1', 'SQL')];
-    const answers: QuestionAnswer[] = [{ questionId: 'q1', descriptiveAnswer: '回答' }];
+  test('複数区分をまたいで区分ごとに正しく集計する', () => {
+    const entries: QuestionScoreEntry[] = [
+      { category: 'コーディング', score: 100 },
+      { category: 'SQL', score: 50 },
+      { category: 'SQL', score: 100 },
+    ];
 
-    const result = scoreExam(questions, answers);
+    const result = aggregateScores(entries);
+
+    expect(result.categoryScores.find((c) => c.categoryName === 'コーディング')).toMatchObject({
+      questionCount: 1,
+      totalScore: 100,
+      correctRate: 100,
+    });
+    expect(result.categoryScores.find((c) => c.categoryName === 'SQL')).toMatchObject({
+      questionCount: 2,
+      totalScore: 150,
+      correctRate: 75,
+    });
+  });
+
+  test('出題が1問もない場合、正解率は0とする（0除算を避ける）', () => {
+    const result = aggregateScores([]);
 
     expect(result.overallCorrectRate).toBe(0);
+    expect(result.questionCount).toBe(0);
+    expect(result.totalScore).toBe(0);
+    expect(result.categoryScores).toEqual([]);
+  });
+
+  test('isDescriptiveSubmittedを指定しない選択式は記述式提出数にカウントされない', () => {
+    const entries: QuestionScoreEntry[] = [
+      { category: 'コーディング', score: 100 },
+      { category: 'コーディング', score: 0, isDescriptiveSubmitted: false },
+    ];
+
+    const result = aggregateScores(entries);
+
+    expect(result.categoryScores[0]?.descriptiveSubmittedCount).toBe(0);
   });
 });
