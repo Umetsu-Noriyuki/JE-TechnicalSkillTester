@@ -24,7 +24,7 @@ describe('server/config/constants', () => {
   });
 
   test('Geminiのモデル名・APIベースURLが定義されている', () => {
-    expect(GEMINI_MODEL).toBe('gemini-2.5-flash');
+    expect(GEMINI_MODEL).toBe('gemini-3.6-flash');
     expect(GEMINI_API_BASE_URL).toBe('https://generativelanguage.googleapis.com/v1beta/models');
   });
 });
