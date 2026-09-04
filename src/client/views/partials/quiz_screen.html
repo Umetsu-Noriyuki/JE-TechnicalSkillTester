@@ -1,0 +1,196 @@
+<div id="quiz-screen" class="screen" style="display: none">
+  <div class="quiz-header">
+    <div style="margin-right: auto">
+      <div class="text-muted" style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase">
+        経過時間
+      </div>
+      <div style="font-size: 34px; font-weight: 600; line-height: 1.05; font-variant-numeric: tabular-nums">
+        <span id="quiz-elapsed-time">00:00</span>
+        <span class="text-muted" style="font-size: 17px; font-weight: 400"> / 30:00</span>
+      </div>
+    </div>
+    <div class="quiz-progress">
+      <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 7px">
+        <span class="text-muted">回答状況</span>
+        <span>回答済 <span id="quiz-answered-count">0</span> / 30</span>
+      </div>
+      <div class="quiz-progress-bar">
+        <div id="quiz-progress-bar-fill" class="quiz-progress-bar-fill" style="width: 0%"></div>
+      </div>
+    </div>
+    <button id="quiz-jump-unanswered-button" class="btn btn-secondary" type="button">未回答の問題へ移動</button>
+  </div>
+
+  <!-- 制限時間到達時にJSで表示するバナー（現時点では静的マークアップのみ、表示切替は未実装） -->
+  <div id="quiz-timeout-banner" class="quiz-timeout-banner" style="display: none">
+    <h4 style="margin: 0">制限時間に達しました。ここまでの回答内容で終了します。</h4>
+    <p style="margin: 0; font-size: 14px">
+      入力済みの回答はそのまま保持されています。内容の変更はできません。「採点」ボタンを押して終了してください。
+    </p>
+  </div>
+
+  <div class="quiz-body">
+    <div class="quiz-questions">
+    <div id="quiz-questions" class="quiz-questions-list">
+      <!-- 起動時、実際の出題内容でJSがこのコンテナの中身のみを差し替える（フッターは対象外） -->
+      <div class="quiz-question">
+        <div class="quiz-question-number">Q1</div>
+        <div class="quiz-question-body">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span class="tag tag-neutral">選択式</span>
+            <span class="text-muted" style="font-size: 12px">1つ選択してください</span>
+          </div>
+          <p style="margin: 0; font-size: 19px; line-height: 1.6">
+            変数 <span style="font-family: ui-monospace, Menlo, monospace; font-size: 17px">x</span>
+            が「1以上10以下」であることを表す条件式として、正しいものはどれですか。
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 4px">
+            <label
+              class="radio"
+              style="
+                padding: 10px 12px;
+                min-height: 44px;
+                font-size: 16px;
+                font-family: ui-monospace, Menlo, monospace;
+                background: var(--color-accent-100);
+              "
+            >
+              <input type="radio" name="q1" checked />
+              <span class="dot"></span>
+              <span>x &gt;= 1 &amp;&amp; x &lt;= 10</span>
+            </label>
+            <label
+              class="radio"
+              style="padding: 10px 12px; min-height: 44px; font-size: 16px; font-family: ui-monospace, Menlo, monospace"
+            >
+              <input type="radio" name="q1" />
+              <span class="dot"></span>
+              <span>x &gt;= 1 || x &lt;= 10</span>
+            </label>
+            <label
+              class="radio"
+              style="padding: 10px 12px; min-height: 44px; font-size: 16px; font-family: ui-monospace, Menlo, monospace"
+            >
+              <input type="radio" name="q1" />
+              <span class="dot"></span>
+              <span>1 &lt;= x &lt;= 10</span>
+            </label>
+            <label
+              class="radio"
+              style="padding: 10px 12px; min-height: 44px; font-size: 16px; font-family: ui-monospace, Menlo, monospace"
+            >
+              <input type="radio" name="q1" />
+              <span class="dot"></span>
+              <span>x &gt; 1 &amp;&amp; x &lt; 10</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="quiz-question">
+        <div class="quiz-question-number">Q2</div>
+        <div class="quiz-question-body">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span class="tag tag-accent">記述式</span>
+            <span class="text-muted" style="font-size: 12px">自由記述（自動採点の対象外）</span>
+          </div>
+          <p style="margin: 0; font-size: 19px; line-height: 1.6">
+            次のSQLを、部署ごとの平均給与を求め、平均給与が300,000以上の部署のみを抽出するように書き換えてください。
+          </p>
+          <pre
+            style="
+              margin: 0;
+              padding: 16px 18px;
+              background: var(--color-surface);
+              border-radius: var(--radius-md);
+              font-family: ui-monospace, Menlo, monospace;
+              font-size: 14px;
+              line-height: 1.6;
+              overflow-x: auto;
+            "
+          >
+SELECT dept_id, AVG(salary)
+FROM employees
+GROUP BY dept_id;</pre
+          >
+          <textarea
+            class="input"
+            style="min-height: 132px; font-family: ui-monospace, Menlo, monospace; font-size: 15px; line-height: 1.6"
+          ></textarea>
+          <p class="text-muted" style="margin: 0; font-size: 12px">
+            考え方が伝わる範囲で記述してください。空欄のまま次へ進むこともできます。
+          </p>
+        </div>
+      </div>
+
+      <div class="quiz-question">
+        <div class="quiz-question-number" style="color: var(--color-accent-2-700)">Q3</div>
+        <div class="quiz-question-body">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span class="tag tag-neutral">選択式</span>
+            <span class="tag tag-accent-2">未回答</span>
+          </div>
+          <p style="margin: 0; font-size: 19px; line-height: 1.6">
+            物事を「漏れなく、重複なく」分解して整理する考え方を指す言葉はどれですか。
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 4px">
+            <label class="radio" style="padding: 10px 12px; min-height: 44px; font-size: 16px">
+              <input type="radio" name="q3" />
+              <span class="dot"></span>
+              <span>MECE</span>
+            </label>
+            <label class="radio" style="padding: 10px 12px; min-height: 44px; font-size: 16px">
+              <input type="radio" name="q3" />
+              <span class="dot"></span>
+              <span>PDCA</span>
+            </label>
+            <label class="radio" style="padding: 10px 12px; min-height: 44px; font-size: 16px">
+              <input type="radio" name="q3" />
+              <span class="dot"></span>
+              <span>KPI</span>
+            </label>
+            <label class="radio" style="padding: 10px 12px; min-height: 44px; font-size: 16px">
+              <input type="radio" name="q3" />
+              <span class="dot"></span>
+              <span>SWOT分析</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 18px; padding-top: 8px">
+      <h3 style="margin: 0">以上で全30問です</h3>
+      <p style="margin: 0; font-size: 15px">
+        未回答の問題が <span id="quiz-unanswered-count" style="color: var(--color-accent-2-700)">30問</span>
+        あります。回答内容をご確認のうえ、<span id="quiz-submit-label">「採点」</span>ボタンを押してください。
+      </p>
+      <div style="display: flex; align-items: center; gap: 16px">
+        <button id="quiz-submit-button" class="btn btn-primary" type="button" style="min-height: 44px; font-size: 15px; padding-inline: 28px">
+          採点
+        </button>
+        <span class="text-muted" style="font-size: 12px">押下後は回答を変更できません。</span>
+      </div>
+      <p class="text-muted" style="margin: 0; font-size: 12px">
+        ※ 入社希望者の画面では、このボタンが「回答終了」となり、正解率は表示されません。
+      </p>
+    </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px; position: sticky; top: 24px; align-self: start">
+      <div class="text-muted" style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase">問題一覧</div>
+      <div id="quiz-nav-grid" class="quiz-nav-grid">
+        <!-- 起動時、実際の出題数分のボタンにJSが差し替える -->
+        <button type="button" class="quiz-nav-cell is-answered">1</button>
+        <button type="button" class="quiz-nav-cell is-answered">2</button>
+        <button type="button" class="quiz-nav-cell">3</button>
+        <button type="button" class="quiz-nav-cell is-answered">4</button>
+        <button type="button" class="quiz-nav-cell is-answered">5</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px" class="text-muted">
+        <span>■ 回答済み ／ □ 未回答</span>
+        <span>番号を押すと該当問題へ移動します。</span>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,78 @@
+<div id="result-screen" class="screen" style="display: none">
+  <div class="nav">
+    <span class="nav-brand">プログラミングスキル判定テスト</span>
+    <span class="text-muted" style="font-size: 13px">採点結果</span>
+  </div>
+  <div class="screen-body" style="display: flex; flex-direction: column; gap: 56px">
+    <div class="two-col" style="align-items: start">
+      <div>
+        <span class="tag tag-outline">
+          <? if (role === 'newhire') { ?>
+            未経験の新入社員
+          <? } else { ?>
+            入社3年目までの社員
+          <? } ?>
+        </span>
+        <h1 style="font-size: 40px; margin: 20px 0 0">お疲れさまでした。採点結果をお知らせします。</h1>
+        <p style="margin: 16px 0 0; max-width: 52ch; font-size: 16px">
+          この結果は、苦手分野を把握して今後の学習計画に反映するために記録されます。記述式の回答は後日、担当者が模範回答と照らして確認します。
+        </p>
+        <dl class="info-list" style="grid-template-columns: 110px minmax(0, 1fr); row-gap: 14px; font-size: 15px">
+          <dt>氏名</dt>
+          <dd id="result-examinee-name">—</dd>
+          <dt>社員番号／所属</dt>
+          <dd id="result-examinee-detail">—</dd>
+          <dt>所要時間</dt>
+          <dd id="result-duration">—</dd>
+          <dt>記録日時</dt>
+          <dd id="result-recorded-at">—</dd>
+        </dl>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 12px">
+        <div class="text-muted" style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase">総合正解率</div>
+        <div style="display: flex; align-items: baseline; gap: 12px">
+          <div id="result-score-cmyk" class="cmyk-num" style="font-size: 132px; font-weight: 600">
+            <span class="paper">0</span>
+            <span class="plate plate-c" aria-hidden="true">0</span>
+            <span class="plate plate-m" aria-hidden="true">0</span>
+            <span class="plate plate-y" aria-hidden="true">0</span>
+          </div>
+          <span style="font-size: 40px; font-weight: 600">%</span>
+        </div>
+        <p id="result-choice-summary" style="margin: 12px 0 0; font-size: 15px">選択式の採点結果は未計算です。</p>
+        <p class="text-muted" style="margin: 0; font-size: 13px; max-width: 40ch">
+          記述式は自動採点の対象外のため、正解率には含まれていません。
+        </p>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 20px">
+      <h3 style="margin: 0">分野別の正解率</h3>
+      <div style="overflow-x: auto">
+        <table class="table" style="max-width: 1000px">
+          <thead>
+            <tr>
+              <th style="width: 220px">区分</th>
+              <th style="width: 120px">選択式 正解／出題</th>
+              <th style="width: 300px">正解率</th>
+              <th style="width: 110px">記述式 提出</th>
+            </tr>
+          </thead>
+          <tbody id="result-category-table-body">
+            <!-- 区分別集計は採点処理（submitResult）実装後にここへ動的展開する -->
+            <tr>
+              <td colspan="4" class="text-muted" style="font-size: 13px">採点処理の実装後に区分別結果を表示します。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="max-width: 60ch">
+      <h4 style="margin: 0 0 8px">この後の流れ</h4>
+      <p style="margin: 0; font-size: 15px">
+        結果は自動的に記録されました。記述式の回答内容の確認結果を含めて、後日あらためて振り返りの機会を設けます。この画面は閉じていただいて構いません。
+      </p>
+    </div>
+  </div>
+</div>

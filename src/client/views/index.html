@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="utf-8" />
+    <?!= include('client/views/partials/style'); ?>
+  </head>
+  <body data-role="<?= role ?>">
+    <div style="min-height: 100vh; padding: 24px 16px">
+      <?!= include('client/views/partials/start_screen', { role: role }); ?>
+      <?!= include('client/views/partials/quiz_screen'); ?>
+      <? if (role !== 'applicant') { ?>
+        <?!= include('client/views/partials/result_screen', { role: role }); ?>
+      <? } else { ?>
+        <?!= include('client/views/partials/finish_screen'); ?>
+      <? } ?>
+    </div>
+    <?!= include('client/views/partials/script'); ?>
+  </body>
+</html>
