@@ -427,6 +427,21 @@ const finishExam = async (
 };
 
 /**
+ * error が受験許可チェック（6-3章）の拒否エラーかどうかを判定する。
+ * google.script.run の withFailureHandler が渡すエラーオブジェクトは、GASのサンドボックス化
+ * された別のJSレルムで生成されるため、このページの `Error` コンストラクタとプロトタイプ
+ * チェーンが一致せず `error instanceof Error` が false になりうる。そのため instanceof には
+ * 頼らず、message プロパティの有無・内容のみで判定する。
+ */
+export const isPermissionDeniedError = (error: unknown): boolean => {
+  if (typeof error !== 'object' || error === null || !('message' in error)) {
+    return false;
+  }
+  const message = (error as { message: unknown }).message;
+  return typeof message === 'string' && message.includes(PERMISSION_DENIED_ERROR_MESSAGE);
+};
+
+/**
  * 「テスト開始」ボタン押下時の一連の処理（6-3章）：入力チェック→問題取得→
  * 受験画面への切り替え→タイマー開始→「採点」ボタンの配線。
  */
@@ -447,7 +462,7 @@ const startExam = async (): Promise<void> => {
   try {
     questions = await fetchQuizQuestions(role, examineeValues.name);
   } catch (error) {
-    if (error instanceof Error && error.message === PERMISSION_DENIED_ERROR_MESSAGE) {
+    if (isPermissionDeniedError(error)) {
       window.alert(`${examineeValues.name}様は受験を許可されていません。`);
       return;
     }

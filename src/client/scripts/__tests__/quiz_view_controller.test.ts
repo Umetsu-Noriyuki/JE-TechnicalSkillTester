@@ -5,6 +5,7 @@ import type { QuizQuestion } from '../../../shared/types/quiz_question';
 import {
   collectAnswers,
   formatRecordedAt,
+  isPermissionDeniedError,
   jumpToFirstUnanswered,
   populateScoreCmyk,
   renderCategoryScoreTable,
@@ -344,5 +345,38 @@ describe('formatRecordedAt', () => {
     const date = new Date(2026, 3, 10, 14, 32);
 
     expect(formatRecordedAt(date)).toBe('2026/04/10 14:32');
+  });
+});
+
+describe('isPermissionDeniedError', () => {
+  test('通常のErrorインスタンスでmessageが一致する場合はtrue', () => {
+    expect(isPermissionDeniedError(new Error('PERMISSION_DENIED'))).toBe(true);
+  });
+
+  test('google.script.run経由で渡される、ページのErrorとプロトタイプが異なる（instanceof Errorがfalseになる）オブジェクトでもtrueと判定する', () => {
+    // GASのサンドボックス化されたiframe（別JSレルム）から渡されるエラーは、
+    // このページの Error.prototype を継承しないプレーンオブジェクトとして届くことがある。
+    const crossRealmError: unknown = Object.create(null, {
+      message: { value: 'PERMISSION_DENIED', enumerable: true },
+      name: { value: 'Error', enumerable: true },
+    });
+
+    expect(crossRealmError instanceof Error).toBe(false);
+    expect(isPermissionDeniedError(crossRealmError)).toBe(true);
+  });
+
+  test('messageにPERMISSION_DENIEDを含んでいれば前後に文字があってもtrue', () => {
+    expect(isPermissionDeniedError({ message: 'Exception: PERMISSION_DENIED' })).toBe(true);
+  });
+
+  test('無関係なエラーの場合はfalse', () => {
+    expect(isPermissionDeniedError(new Error('シート「問題マスタ」が見つかりません'))).toBe(false);
+  });
+
+  test('message文字列を持たない値の場合はfalse', () => {
+    expect(isPermissionDeniedError(null)).toBe(false);
+    expect(isPermissionDeniedError(undefined)).toBe(false);
+    expect(isPermissionDeniedError('PERMISSION_DENIED')).toBe(false);
+    expect(isPermissionDeniedError({})).toBe(false);
   });
 });
