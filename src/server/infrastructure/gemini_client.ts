@@ -5,23 +5,23 @@ interface GeminiGenerateContentResponse {
   candidates?: { content?: { parts?: { text?: string }[] } }[];
 }
 
-/**
- * Gemini API（generateContent）へプロンプトを送信し、テキスト応答を返す薄いラッパー（10-2章）。
- * GASのサーバー側実行は同期のため、UrlFetchApp.fetch() もそのまま同期関数として扱う。
- */
-export const generateContent = (prompt: string): string => {
-  const url = `${GEMINI_API_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${getGeminiApiKey()}`;
+const buildUrl = (): string => `${GEMINI_API_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${getGeminiApiKey()}`;
 
-  const response = UrlFetchApp.fetch(url, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: 'application/json' },
-    }),
-    muteHttpExceptions: true,
-  });
+const buildRequestOptions = (prompt: string): GoogleAppsScript.URL_Fetch.URLFetchRequestOptions => ({
+  method: 'post',
+  contentType: 'application/json',
+  payload: JSON.stringify({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      // 採点タスクに内部思考（thinking）は不要かつ大幅な遅延の原因になるため無効化する。
+      thinkingConfig: { thinkingBudget: 0 },
+    },
+  }),
+  muteHttpExceptions: true,
+});
 
+const extractText = (response: GoogleAppsScript.URL_Fetch.HTTPResponse): string => {
   const statusCode = response.getResponseCode();
   if (statusCode < 200 || statusCode >= 300) {
     throw new Error(`Gemini APIの呼び出しに失敗しました（status: ${statusCode}）: ${response.getContentText()}`);
@@ -33,4 +33,36 @@ export const generateContent = (prompt: string): string => {
     throw new Error('Gemini APIのレスポンスからテキストを取得できませんでした');
   }
   return text;
+};
+
+/**
+ * Gemini API（generateContent）へプロンプトを1件送信し、テキスト応答を返す薄いラッパー（10-2章）。
+ * GASのサーバー側実行は同期のため、UrlFetchApp.fetch() もそのまま同期関数として扱う。
+ */
+export const generateContent = (prompt: string): string => {
+  const response = UrlFetchApp.fetch(buildUrl(), buildRequestOptions(prompt));
+  return extractText(response);
+};
+
+/**
+ * 複数のプロンプトを `UrlFetchApp.fetchAll()` でまとめて並列送信する（10-2章、12章の外部API依存対策）。
+ * 記述式問題を1問ずつ直列で採点すると待ち時間が積み上がるため、並列化して合計待ち時間を短縮する。
+ * 個々のリクエストが失敗しても他の結果には影響しない（失敗した要素は Error を返す）。
+ */
+export const generateContentBatch = (prompts: readonly string[]): (string | Error)[] => {
+  if (prompts.length === 0) {
+    return [];
+  }
+
+  const url = buildUrl();
+  const requests = prompts.map((prompt) => ({ url, ...buildRequestOptions(prompt) }));
+  const responses = UrlFetchApp.fetchAll(requests);
+
+  return responses.map((response) => {
+    try {
+      return extractText(response);
+    } catch (error) {
+      return error instanceof Error ? error : new Error(String(error));
+    }
+  });
 };

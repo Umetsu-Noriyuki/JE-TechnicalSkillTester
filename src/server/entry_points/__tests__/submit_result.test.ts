@@ -29,6 +29,15 @@ const textQuestion: Question = {
   modelAnswer: '模範回答',
 };
 
+const textQuestion2: Question = {
+  id: 'q3',
+  category: 'コーディング',
+  subCategory: 'ロジック',
+  format: 'text',
+  text: '記述式の問題文2',
+  modelAnswer: '模範回答2',
+};
+
 const buildPayload = (overrides: Partial<AnswerPayload> = {}): AnswerPayload => ({
   examinee: { role: 'newhire', name: '山田太郎', employeeNumber: 'A1', department: '開発部' },
   answers: [
@@ -43,17 +52,43 @@ const buildPayload = (overrides: Partial<AnswerPayload> = {}): AnswerPayload => 
 describe('submitResult', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(questionRepository.findAllQuestions).mockReturnValue([choiceQuestion, textQuestion]);
-    vi.mocked(descriptiveScorer.scoreDescriptiveAnswer).mockReturnValue({ score: 70, feedback: 'やや不足があります' });
+    vi.mocked(questionRepository.findAllQuestions).mockReturnValue([choiceQuestion, textQuestion, textQuestion2]);
+    vi.mocked(descriptiveScorer.scoreDescriptiveAnswers).mockReturnValue([{ score: 70, feedback: 'やや不足があります' }]);
   });
 
   test('選択式は正誤判定、記述式はGemini採点結果で採点し、集計結果を返す', () => {
     const result = submitResult(buildPayload());
 
-    expect(descriptiveScorer.scoreDescriptiveAnswer).toHaveBeenCalledWith('記述式の問題文', '模範回答', '回答内容');
+    expect(descriptiveScorer.scoreDescriptiveAnswers).toHaveBeenCalledWith([
+      { question: '記述式の問題文', sampleAnswer: '模範回答', studentAnswer: '回答内容' },
+    ]);
     expect(result.questionCount).toBe(2);
     expect(result.totalScore).toBe(170); // 選択式100点 + 記述式70点
     expect(result.overallCorrectRate).toBe(85);
+  });
+
+  test('複数の記述式問題がある場合、まとめて1回だけscoreDescriptiveAnswersへ渡す（並列化）', () => {
+    vi.mocked(descriptiveScorer.scoreDescriptiveAnswers).mockReturnValue([
+      { score: 70, feedback: '1問目のフィードバック' },
+      { score: 40, feedback: '2問目のフィードバック' },
+    ]);
+
+    const result = submitResult(
+      buildPayload({
+        answers: [
+          { questionId: 'q1', selectedChoiceNumber: 1 },
+          { questionId: 'q2', descriptiveAnswer: '回答1' },
+          { questionId: 'q3', descriptiveAnswer: '回答2' },
+        ],
+      }),
+    );
+
+    expect(descriptiveScorer.scoreDescriptiveAnswers).toHaveBeenCalledTimes(1);
+    expect(descriptiveScorer.scoreDescriptiveAnswers).toHaveBeenCalledWith([
+      { question: '記述式の問題文', sampleAnswer: '模範回答', studentAnswer: '回答1' },
+      { question: '記述式の問題文2', sampleAnswer: '模範回答2', studentAnswer: '回答2' },
+    ]);
+    expect(result.totalScore).toBe(210); // 選択式100点 + 70点 + 40点
   });
 
   test('記録内容の回答詳細（M列相当）に選択式・記述式それぞれの得点が含まれる', () => {
@@ -91,6 +126,7 @@ describe('submitResult', () => {
     );
 
     expect(result.questionCount).toBe(1);
+    expect(descriptiveScorer.scoreDescriptiveAnswers).toHaveBeenCalledWith([]);
   });
 
   test('不正なroleの場合はエラーを投げ、記録処理を行わない', () => {
@@ -101,7 +137,7 @@ describe('submitResult', () => {
 
     expect(() => submitResult(invalidPayload)).toThrow('不正な受験者区分');
     expect(resultRepository.appendExamResult).not.toHaveBeenCalled();
-    expect(descriptiveScorer.scoreDescriptiveAnswer).not.toHaveBeenCalled();
+    expect(descriptiveScorer.scoreDescriptiveAnswers).not.toHaveBeenCalled();
   });
 
   test('入社希望者の場合、社員番号・所属は空文字として記録する', () => {

@@ -1,9 +1,18 @@
-import { generateContent } from '../../infrastructure/gemini_client';
+import { generateContentBatch } from '../../infrastructure/gemini_client';
 
 export interface DescriptiveScoreResult {
   score: number;
   feedback: string;
 }
+
+export interface DescriptiveAnswerToScore {
+  question: string;
+  sampleAnswer: string;
+  studentAnswer: string;
+}
+
+const UNANSWERED_RESULT: DescriptiveScoreResult = { score: 0, feedback: '未回答のため0点としました。' };
+const ERROR_RESULT: DescriptiveScoreResult = { score: 0, feedback: '採点処理でエラーが発生したため0点としました。' };
 
 /**
  * プロンプト本文は specification/for-AI-prompt.md の内容と同期させること。
@@ -65,25 +74,46 @@ const parseGeminiResponse = (text: string): DescriptiveScoreResult => {
 };
 
 /**
- * 記述式問題をGemini APIで採点する（10-2章）。
- * - 未回答の場合はAPIを呼び出さず0点とする。
- * - API呼び出し・レスポンス解析に失敗した場合も0点として扱い、例外は投げない（12章：提出処理自体は継続する）。
+ * 複数の記述式問題をまとめてGemini APIで採点する（10-2章）。
+ * - Gemini呼び出しは generateContentBatch（UrlFetchApp.fetchAll）により並列実行し、
+ *   1問ずつ直列で呼び出す場合に比べて合計の待ち時間を短縮する（12章：外部API依存対策）。
+ * - 未回答の項目はAPIの呼び出し対象から除外し0点とする。
+ * - 個々の呼び出し・レスポンス解析に失敗した場合もそのIndexのみ0点として扱い、例外は投げない
+ *   （12章：提出処理自体は継続し、他の設問の採点結果には影響しない）。
+ * 戻り値の配列は、引数 answers と同じ順序・同じ要素数になる。
  */
-export const scoreDescriptiveAnswer = (
-  question: string,
-  sampleAnswer: string,
-  studentAnswer: string,
-): DescriptiveScoreResult => {
-  if (studentAnswer.trim() === '') {
-    return { score: 0, feedback: '未回答のため0点としました。' };
-  }
+export const scoreDescriptiveAnswers = (
+  answers: readonly DescriptiveAnswerToScore[],
+): DescriptiveScoreResult[] => {
+  const targetIndexes: number[] = [];
+  const prompts: string[] = [];
 
-  try {
-    const responseText = generateContent(buildPrompt(question, sampleAnswer, studentAnswer));
-    return parseGeminiResponse(responseText);
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Gemini採点に失敗したため0点として扱います', error);
-    return { score: 0, feedback: '採点処理でエラーが発生したため0点としました。' };
-  }
+  answers.forEach((answer, index) => {
+    if (answer.studentAnswer.trim() !== '') {
+      targetIndexes.push(index);
+      prompts.push(buildPrompt(answer.question, answer.sampleAnswer, answer.studentAnswer));
+    }
+  });
+
+  const responses = generateContentBatch(prompts);
+  const resultByIndex = new Map<number, DescriptiveScoreResult>();
+
+  targetIndexes.forEach((originalIndex, i) => {
+    const response = responses[i];
+    if (response instanceof Error) {
+      // eslint-disable-next-line no-console
+      console.error('Gemini採点に失敗したため0点として扱います', response);
+      resultByIndex.set(originalIndex, ERROR_RESULT);
+      return;
+    }
+    try {
+      resultByIndex.set(originalIndex, parseGeminiResponse(response));
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Geminiのレスポンス解析に失敗したため0点として扱います', error);
+      resultByIndex.set(originalIndex, ERROR_RESULT);
+    }
+  });
+
+  return answers.map((_answer, index) => resultByIndex.get(index) ?? UNANSWERED_RESULT);
 };
