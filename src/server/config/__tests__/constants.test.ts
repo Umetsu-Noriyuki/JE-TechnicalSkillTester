@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import {
   CATEGORY_NAMES,
+  DESCRIPTIVE_SCORE_SLOT_COUNT,
+  DESCRIPTIVE_SCORING_PENDING_MARKER,
   GEMINI_API_BASE_URL,
-  GEMINI_MAX_REQUESTS_PER_MINUTE,
+  GEMINI_MAX_RETRY_COUNT,
   GEMINI_MODEL,
-  GEMINI_RATE_LIMIT_COOLDOWN_MILLISECONDS,
   GEMINI_RETRY_DELAY_MILLISECONDS,
   LOCK_WAIT_MILLISECONDS,
   SHEET_NAMES,
@@ -32,9 +33,13 @@ describe('server/config/constants', () => {
     expect(GEMINI_API_BASE_URL).toBe('https://generativelanguage.googleapis.com/v1beta/models');
   });
 
-  test('Geminiのレート制限対応の定数が定義されている', () => {
-    expect(GEMINI_MAX_REQUESTS_PER_MINUTE).toBe(4);
-    expect(GEMINI_RATE_LIMIT_COOLDOWN_MILLISECONDS).toBe(61000);
+  test('Geminiの再試行対応の定数が定義されている', () => {
+    expect(GEMINI_MAX_RETRY_COUNT).toBe(3);
     expect(GEMINI_RETRY_DELAY_MILLISECONDS).toBe(30000);
+  });
+
+  test('記述式採点列（N〜T列）に関する定数が定義されている', () => {
+    expect(DESCRIPTIVE_SCORE_SLOT_COUNT).toBe(7);
+    expect(DESCRIPTIVE_SCORING_PENDING_MARKER).toBe('採点中');
   });
 });

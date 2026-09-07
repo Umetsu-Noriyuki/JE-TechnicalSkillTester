@@ -23,14 +23,16 @@ export const GEMINI_MODEL = 'gemini-3.6-flash';
 export const GEMINI_API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 /**
- * Gemini API無料枠のレート制限（1分あたりのリクエスト数）に基づくチャンクサイズ。
- * 実機の429エラーで「limit: 5」（GenerateRequestsPerMinutePerProjectPerModel-FreeTier）が
- * 確認されたため、境界での揺れを考慮し安全マージンを見て4件とする。
+ * 記述式7問をまとめた1回のGemini呼び出しが失敗した場合の最大再試行回数（10-2章）。
+ * 初回呼び出しを含めると最大 GEMINI_MAX_RETRY_COUNT + 1 回試行する。
  */
-export const GEMINI_MAX_REQUESTS_PER_MINUTE = 4;
+export const GEMINI_MAX_RETRY_COUNT = 3;
 
-/** レート制限のウィンドウが確実に切り替わるよう、チャンク間に空ける待機時間（ミリ秒）。 */
-export const GEMINI_RATE_LIMIT_COOLDOWN_MILLISECONDS = 61000;
-
-/** 429（レート制限超過）・503（一時的な高負荷）発生時、再試行までの待機時間（ミリ秒）。 */
+/** Gemini呼び出し失敗時、再試行までの待機時間（ミリ秒）。429（レート制限超過）・503（過負荷）を想定。 */
 export const GEMINI_RETRY_DELAY_MILLISECONDS = 30000;
+
+/** 「受験結果」シートに設ける記述式採点列（N〜T列）の固定列数（11-2章）。 */
+export const DESCRIPTIVE_SCORE_SLOT_COUNT = 7;
+
+/** 記述式採点列（N〜T列）に、バックグラウンド採点が完了するまでの間だけ書き込む仮の値。 */
+export const DESCRIPTIVE_SCORING_PENDING_MARKER = '採点中';

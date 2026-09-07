@@ -68,6 +68,22 @@
       </div>
     </div>
 
+    <div id="result-descriptive-section" style="display: flex; flex-direction: column; gap: 20px">
+      <h3 style="margin: 0">記述式の採点結果</h3>
+      <div
+        id="result-descriptive-wait-message"
+        class="text-muted"
+        style="display: flex; align-items: center; gap: 12px; font-size: 14px"
+      >
+        <span id="result-descriptive-spinner" class="spinner" aria-hidden="true"></span>
+        <span>採点中です。すべての記述式が採点されるまで10～15分かかります。この画面は閉じても採点処理は継続します。</span>
+      </div>
+      <p id="result-descriptive-error" class="text-muted" style="display: none; font-size: 14px">
+        記述式の採点結果の取得に失敗しました。時間をおいて画面を再読み込みしてください（採点処理自体は継続しています）。
+      </p>
+      <div id="result-descriptive-items" style="display: flex; flex-direction: column; gap: 16px"></div>
+    </div>
+
     <div style="max-width: 60ch">
       <h4 style="margin: 0 0 8px">この後の流れ</h4>
       <p style="margin: 0; font-size: 15px">

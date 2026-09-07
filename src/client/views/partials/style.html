@@ -317,6 +317,47 @@
     background: color-mix(in srgb, var(--color-text) 4%, transparent);
   }
 
+  /* — 記述式のバックグラウンド採点中スピナー — */
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, var(--color-text) 15%, transparent);
+    border-top-color: var(--color-accent);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* — 記述式採点結果カード（結果画面） — */
+  .descriptive-score-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: var(--space-4);
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius-md);
+  }
+  .descriptive-score-card dt {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--color-text) 60%, transparent);
+    margin-top: var(--space-2);
+  }
+  .descriptive-score-card dt:first-child {
+    margin-top: 0;
+  }
+  .descriptive-score-card dd {
+    margin: 2px 0 0;
+    font-size: 14px;
+    white-space: pre-wrap;
+  }
+
   /* — CMYKスコア数字（結果画面の総合正解率表示） — */
   .cmyk-num {
     --cmyk-num-ground: var(--color-bg);

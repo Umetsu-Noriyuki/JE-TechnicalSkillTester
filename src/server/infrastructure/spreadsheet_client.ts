@@ -16,7 +16,27 @@ const getSheet = (sheetName: string): GoogleAppsScript.Spreadsheet.Sheet => {
  */
 export const getSheetValues = (sheetName: string): unknown[][] => getSheet(sheetName).getDataRange().getValues();
 
-/** 指定したシート（タブ）の末尾に1行追記する。 */
-export const appendSheetRow = (sheetName: string, row: readonly (string | number | Date)[]): void => {
-  getSheet(sheetName).appendRow([...row]);
+/** 指定したシート（タブ）の末尾に1行追記し、追記した行番号（1始まり）を返す。 */
+export const appendSheetRow = (sheetName: string, row: readonly (string | number | Date)[]): number => {
+  const sheet = getSheet(sheetName);
+  sheet.appendRow([...row]);
+  return sheet.getLastRow();
+};
+
+/** 指定したシート・行の、startColumn（1始まり）から numColumns 列分の値を1次元配列で返す。 */
+export const getRowValues = (
+  sheetName: string,
+  rowNumber: number,
+  startColumn: number,
+  numColumns: number,
+): unknown[] => getSheet(sheetName).getRange(rowNumber, startColumn, 1, numColumns).getValues()[0] ?? [];
+
+/** 指定したシート・行の、startColumn（1始まり）から values の要素数分だけ値を書き込む。 */
+export const setRowValues = (
+  sheetName: string,
+  rowNumber: number,
+  startColumn: number,
+  values: readonly (string | number)[],
+): void => {
+  getSheet(sheetName).getRange(rowNumber, startColumn, 1, values.length).setValues([[...values]]);
 };

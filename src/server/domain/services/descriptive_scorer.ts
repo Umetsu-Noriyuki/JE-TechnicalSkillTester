@@ -1,33 +1,40 @@
-import { generateContentBatch } from '../../infrastructure/gemini_client';
-
-export interface DescriptiveScoreResult {
-  score: number;
-  feedback: string;
-}
+import { GEMINI_MAX_RETRY_COUNT, GEMINI_RETRY_DELAY_MILLISECONDS } from '../../config/constants';
+import { generateContent } from '../../infrastructure/gemini_client';
 
 export interface DescriptiveAnswerToScore {
+  questionId: string;
   question: string;
   sampleAnswer: string;
   studentAnswer: string;
 }
 
-const UNANSWERED_RESULT: DescriptiveScoreResult = { score: 0, feedback: '未回答のため0点としました。' };
-const ERROR_RESULT: DescriptiveScoreResult = { score: 0, feedback: '採点処理でエラーが発生したため0点としました。' };
+export interface DescriptiveScoreResult {
+  questionId: string;
+  score: number;
+  feedback: string;
+}
+
+const UNANSWERED_FEEDBACK = '未回答のため0点としました。';
+const ERROR_FEEDBACK = '採点処理でエラーが発生したため0点としました。';
+
+const unansweredResult = (questionId: string): DescriptiveScoreResult => ({
+  questionId,
+  score: 0,
+  feedback: UNANSWERED_FEEDBACK,
+});
+
+const errorResult = (questionId: string): DescriptiveScoreResult => ({
+  questionId,
+  score: 0,
+  feedback: ERROR_FEEDBACK,
+});
 
 /**
  * プロンプト本文は specification/for-AI-prompt.md の内容と同期させること。
+ * 記述式の問題は最大7問（DESCRIPTIVE_SCORE_SLOT_COUNT）を1回のリクエストにまとめて送信する（10-2章）。
  */
-const buildPrompt = (question: string, sampleAnswer: string, studentAnswer: string): string => `プログラミングスキル判定テストにおける記述式の採点を実施してください。
-以下の「問題」の「模範回答」と「受講者の提出回答」を比較評価し採点を実施してください。
-
-【問題】
-${question}
-
-【模範回答】
-${sampleAnswer}
-
-【受講者の提出回答】
-${studentAnswer}
+const buildBatchPrompt = (targets: readonly DescriptiveAnswerToScore[]): string => `プログラミングスキル判定テストにおける記述式の採点を実施してください。
+以下は複数の設問です。設問ごとに「問題」の「模範回答」と「受講者の提出回答」を比較評価し採点を実施してください。
 
 【採点基準】
 問題毎に100点を満点とします。
@@ -48,72 +55,94 @@ ${studentAnswer}
 3. 模範回答と比較して、合っている内容もあるが不足がある場合、不足状況により70-10点の間で10点刻みで変動した配点とする
 4. 模範回答と比較して、全く合っている内容が無い場合0点
 
-【出力形式】
-必ず以下のJSON形式のみで回答を出力してください。Markdownなどの余計な囲みは不要です。
-{
-  "score": (0〜100の数値),
-  "feedback": "(簡潔な採点理由や改善点のアドバイス)"
-}`;
+【採点対象】
+以下はJSON配列形式で、複数の設問（questionId・問題・模範回答・受講者の提出回答）を渡します。
+${JSON.stringify(
+  targets.map((target) => ({
+    questionId: target.questionId,
+    question: target.question,
+    sampleAnswer: target.sampleAnswer,
+    studentAnswer: target.studentAnswer,
+  })),
+)}
 
-const parseGeminiResponse = (text: string): DescriptiveScoreResult => {
-  // Geminiがコードブロック（```json ... ```）で囲む場合に備え、JSON部分のみ抽出する
+【出力形式】
+必ず以下のJSON配列形式のみで回答を出力してください。Markdownなどの余計な囲みは不要です。
+入力された設問すべてについて、questionIdを一致させたうえで1件ずつ結果を含めてください（順序は問いません）。
+[
+  { "questionId": "(採点対象のquestionIdをそのまま転記)", "score": (0〜100の数値), "feedback": "(簡潔な採点理由や改善点のアドバイス)" }
+]`;
+
+const parseBatchResponse = (
+  text: string,
+  targets: readonly DescriptiveAnswerToScore[],
+): Map<string, DescriptiveScoreResult> => {
   const jsonText = text
     .trim()
     .replace(/^```(?:json)?\s*/i, '')
     .replace(/```\s*$/, '');
-  const parsed = JSON.parse(jsonText) as { score?: unknown; feedback?: unknown };
+  const parsed = JSON.parse(jsonText) as unknown;
 
-  if (typeof parsed.score !== 'number' || typeof parsed.feedback !== 'string') {
-    throw new Error('Geminiのレスポンス形式が不正です');
+  if (!Array.isArray(parsed)) {
+    throw new Error('Geminiのレスポンス形式が不正です（配列ではありません）');
   }
 
-  return {
-    score: Math.min(100, Math.max(0, Math.round(parsed.score))),
-    feedback: parsed.feedback,
-  };
+  const resultByQuestionId = new Map<string, DescriptiveScoreResult>();
+  for (const item of parsed as { questionId?: unknown; score?: unknown; feedback?: unknown }[]) {
+    if (typeof item.questionId !== 'string' || typeof item.score !== 'number' || typeof item.feedback !== 'string') {
+      throw new Error('Geminiのレスポンス形式が不正です');
+    }
+    resultByQuestionId.set(item.questionId, {
+      questionId: item.questionId,
+      score: Math.min(100, Math.max(0, Math.round(item.score))),
+      feedback: item.feedback,
+    });
+  }
+
+  for (const target of targets) {
+    if (!resultByQuestionId.has(target.questionId)) {
+      throw new Error(`Geminiのレスポンスに設問の採点結果が含まれていません: ${target.questionId}`);
+    }
+  }
+
+  return resultByQuestionId;
 };
 
 /**
- * 複数の記述式問題をまとめてGemini APIで採点する（10-2章）。
- * - Gemini呼び出しは generateContentBatch（UrlFetchApp.fetchAll）により並列実行し、
- *   1問ずつ直列で呼び出す場合に比べて合計の待ち時間を短縮する（12章：外部API依存対策）。
+ * 記述式問題をまとめて1回のリクエストでGemini APIに採点させる（10-2章）。
  * - 未回答の項目はAPIの呼び出し対象から除外し0点とする。
- * - 個々の呼び出し・レスポンス解析に失敗した場合もそのIndexのみ0点として扱い、例外は投げない
- *   （12章：提出処理自体は継続し、他の設問の採点結果には影響しない）。
+ * - 呼び出し・レスポンス解析に失敗した場合は、GEMINI_RETRY_DELAY_MILLISECONDS待機したうえで
+ *   バッチ全体を最大 GEMINI_MAX_RETRY_COUNT 回再試行する（12章：外部API依存対策）。
+ *   1つのリクエストにまとめているため、失敗時は全問まとめて0点になる（バッチ化とのトレードオフ）。
  * 戻り値の配列は、引数 answers と同じ順序・同じ要素数になる。
  */
-export const scoreDescriptiveAnswers = (
+export const scoreDescriptiveAnswersBatch = (
   answers: readonly DescriptiveAnswerToScore[],
 ): DescriptiveScoreResult[] => {
-  const targetIndexes: number[] = [];
-  const prompts: string[] = [];
+  const targets = answers.filter((answer) => answer.studentAnswer.trim() !== '');
+  if (targets.length === 0) {
+    return answers.map((answer) => unansweredResult(answer.questionId));
+  }
 
-  answers.forEach((answer, index) => {
-    if (answer.studentAnswer.trim() !== '') {
-      targetIndexes.push(index);
-      prompts.push(buildPrompt(answer.question, answer.sampleAnswer, answer.studentAnswer));
-    }
-  });
+  const prompt = buildBatchPrompt(targets);
 
-  const responses = generateContentBatch(prompts);
-  const resultByIndex = new Map<number, DescriptiveScoreResult>();
-
-  targetIndexes.forEach((originalIndex, i) => {
-    const response = responses[i];
-    if (response instanceof Error) {
-      // eslint-disable-next-line no-console
-      console.error('Gemini採点に失敗したため0点として扱います', response);
-      resultByIndex.set(originalIndex, ERROR_RESULT);
-      return;
+  for (let attempt = 0; attempt <= GEMINI_MAX_RETRY_COUNT; attempt += 1) {
+    if (attempt > 0) {
+      Utilities.sleep(GEMINI_RETRY_DELAY_MILLISECONDS);
     }
     try {
-      resultByIndex.set(originalIndex, parseGeminiResponse(response));
+      const resultByQuestionId = parseBatchResponse(generateContent(prompt), targets);
+      return answers.map(
+        (answer) => resultByQuestionId.get(answer.questionId) ?? unansweredResult(answer.questionId),
+      );
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('Geminiのレスポンス解析に失敗したため0点として扱います', error);
-      resultByIndex.set(originalIndex, ERROR_RESULT);
+      console.error(`Gemini採点に失敗しました（試行 ${attempt + 1}/${GEMINI_MAX_RETRY_COUNT + 1}）`, error);
     }
-  });
+  }
 
-  return answers.map((_answer, index) => resultByIndex.get(index) ?? UNANSWERED_RESULT);
+  const targetQuestionIds = new Set(targets.map((target) => target.questionId));
+  return answers.map((answer) =>
+    targetQuestionIds.has(answer.questionId) ? errorResult(answer.questionId) : unansweredResult(answer.questionId),
+  );
 };
