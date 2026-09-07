@@ -21,3 +21,16 @@ export const GEMINI_MODEL = 'gemini-3.6-flash';
 
 /** Gemini API（generateContent）のベースURL。末尾に `/{model}:generateContent?key=...` を付与して使用する。 */
 export const GEMINI_API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+
+/**
+ * Gemini API無料枠のレート制限（1分あたりのリクエスト数）に基づくチャンクサイズ。
+ * 実機の429エラーで「limit: 5」（GenerateRequestsPerMinutePerProjectPerModel-FreeTier）が
+ * 確認されたため、境界での揺れを考慮し安全マージンを見て4件とする。
+ */
+export const GEMINI_MAX_REQUESTS_PER_MINUTE = 4;
+
+/** レート制限のウィンドウが確実に切り替わるよう、チャンク間に空ける待機時間（ミリ秒）。 */
+export const GEMINI_RATE_LIMIT_COOLDOWN_MILLISECONDS = 61000;
+
+/** 429（レート制限超過）・503（一時的な高負荷）発生時、再試行までの待機時間（ミリ秒）。 */
+export const GEMINI_RETRY_DELAY_MILLISECONDS = 30000;
