@@ -12,11 +12,10 @@ const buildRequestOptions = (prompt: string): GoogleAppsScript.URL_Fetch.URLFetc
   contentType: 'application/json',
   payload: JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: {
-      responseMimeType: 'application/json',
-      // 採点タスクに内部思考（thinking）は不要かつ大幅な遅延の原因になるため無効化する。
-      thinkingConfig: { thinkingBudget: 0 },
-    },
+    // thinkingConfig（内部思考の無効化）を一度試したが、GEMINI_MODELで
+    // 「Request contains an invalid argument.」(400)を返すことが実機で確認されたため削除した。
+    // 速度改善は generateContentBatch による並列化のみで対応する。
+    generationConfig: { responseMimeType: 'application/json' },
   }),
   muteHttpExceptions: true,
 });

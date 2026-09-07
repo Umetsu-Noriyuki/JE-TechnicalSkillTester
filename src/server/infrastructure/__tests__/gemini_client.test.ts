@@ -37,7 +37,7 @@ describe('generateContent', () => {
     const [url, options] = fetch.mock.calls[0] ?? [];
     expect(url).toContain('key=test-api-key');
     expect(JSON.parse((options as { payload: string }).payload)).toMatchObject({
-      generationConfig: { thinkingConfig: { thinkingBudget: 0 } },
+      generationConfig: { responseMimeType: 'application/json' },
     });
     expect(result).toBe('{"score":80,"feedback":"良い回答です"}');
   });
