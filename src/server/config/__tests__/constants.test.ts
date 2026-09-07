@@ -8,10 +8,11 @@ import {
 } from '../constants';
 
 describe('server/config/constants', () => {
-  test('問題マスタ・受験結果それぞれのシート名が定義されている', () => {
+  test('問題マスタ・受験結果・受験許可それぞれのシート名が定義されている', () => {
     expect(SHEET_NAMES).toEqual({
       questionMaster: '問題マスタ',
       examResult: '受験結果',
+      examPermission: '受験許可',
     });
   });
 

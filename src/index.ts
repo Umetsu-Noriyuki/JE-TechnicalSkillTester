@@ -26,8 +26,8 @@ function include(filename: string, data?: Readonly<Record<string, unknown>>): st
   return includeImpl(filename, data);
 }
 
-function getQuizQuestions(role: string): QuizQuestion[] {
-  return getQuizQuestionsImpl(role);
+function getQuizQuestions(role: string, name: string): QuizQuestion[] {
+  return getQuizQuestionsImpl(role, name);
 }
 
 function submitResult(payload: AnswerPayload): ScoringResult {

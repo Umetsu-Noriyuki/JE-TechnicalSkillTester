@@ -5,7 +5,7 @@ import type { ScoringResult } from '../../shared/types/scoring_result';
 interface GoogleScriptRun {
   withSuccessHandler(callback: (value: unknown) => void): GoogleScriptRun;
   withFailureHandler(callback: (error: Error) => void): GoogleScriptRun;
-  getQuizQuestions(role: string): void;
+  getQuizQuestions(role: string, name: string): void;
   submitResult(payload: AnswerPayload): void;
 }
 
@@ -17,12 +17,12 @@ declare const google: { script: { run: GoogleScriptRun } };
  * ScoringResult で保証されているため、ここでのキャストは同一コードベース内の型契約に
  * 基づく安全なものである。
  */
-export const fetchQuizQuestions = (role: string): Promise<QuizQuestion[]> =>
+export const fetchQuizQuestions = (role: string, name: string): Promise<QuizQuestion[]> =>
   new Promise((resolve, reject) => {
     google.script.run
       .withSuccessHandler((value) => resolve(value as QuizQuestion[]))
       .withFailureHandler((error) => reject(error))
-      .getQuizQuestions(role);
+      .getQuizQuestions(role, name);
   });
 
 /** 「採点」／「回答終了」ボタン押下時に回答一式を送信し、採点結果を受け取る（10-1章）。 */

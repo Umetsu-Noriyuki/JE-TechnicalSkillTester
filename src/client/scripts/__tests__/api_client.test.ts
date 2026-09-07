@@ -24,16 +24,16 @@ describe('fetchQuizQuestions', () => {
   test('成功時は取得した問題配列でPromiseを解決する', async () => {
     const questions: QuizQuestion[] = [{ id: 'q1', format: 'text', text: '問題文' }];
 
-    const promise = fetchQuizQuestions('applicant');
+    const promise = fetchQuizQuestions('applicant', '山田太郎');
     const successCallback = runner.withSuccessHandler.mock.calls[0][0] as (value: unknown) => void;
     successCallback(questions);
 
     await expect(promise).resolves.toEqual(questions);
-    expect(runner.getQuizQuestions).toHaveBeenCalledWith('applicant');
+    expect(runner.getQuizQuestions).toHaveBeenCalledWith('applicant', '山田太郎');
   });
 
   test('失敗時はエラーでPromiseを拒否する', async () => {
-    const promise = fetchQuizQuestions('applicant');
+    const promise = fetchQuizQuestions('applicant', '山田太郎');
     const failureCallback = runner.withFailureHandler.mock.calls[0][0] as (error: Error) => void;
     failureCallback(new Error('server error'));
 

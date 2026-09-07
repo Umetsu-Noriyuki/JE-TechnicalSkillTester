@@ -35,7 +35,7 @@ src/
 │   │   │   ├── get_quiz_questions.test.ts
 │   │   │   └── submit_result.test.ts
 │   │   ├── do_get.ts                   # doGet(e)：roleパラメータ検証・HTML出力（3-4, 4-1章）
-│   │   ├── get_quiz_questions.ts       # getQuizQuestions(role)：出題（6-3, 7章）
+│   │   ├── get_quiz_questions.ts       # getQuizQuestions(role, name)：受験許可チェック・出題（6-3, 6-4, 7章）
 │   │   └── submit_result.ts            # submitResult(payload)：採点・記録（10章, 11章）
 │   │
 │   ├── domain/                         # ドメインロジック（GAS APIに依存しない純粋関数群）
@@ -50,19 +50,23 @@ src/
 │   │       │   ├── choice_shuffler.test.ts
 │   │       │   ├── scorer.test.ts
 │   │       │   ├── answer_detail_builder.test.ts
-│   │       │   └── descriptive_scorer.test.ts
+│   │       │   ├── descriptive_scorer.test.ts
+│   │       │   └── examinee_permission_checker.test.ts
 │   │       ├── question_selector.ts    # 区分別抽出・記述式按分ロジック（7-2, 7-3, 7-4章）
 │   │       ├── choice_shuffler.ts      # 選択肢シャッフルと正誤対応の保持（8章）
 │   │       ├── scorer.ts               # 得点の集計・正解率算出（純粋関数、10-3章）
 │   │       ├── answer_detail_builder.ts # 受験結果シートM列用の回答詳細生成（11-2章）
-│   │       └── descriptive_scorer.ts   # 記述式のGemini採点（例外的にinfrastructureへ依存、10-2章）
+│   │       ├── descriptive_scorer.ts   # 記述式のGemini採点（例外的にinfrastructureへ依存、10-2章）
+│   │       └── examinee_permission_checker.ts # 入力氏名と受験許可氏名一覧の照合（純粋関数、6-3章）
 │   │
 │   ├── repositories/                   # スプレッドシートアクセス（Repositoryパターン）
 │   │   ├── __tests__/
 │   │   │   ├── question_repository.test.ts
-│   │   │   └── result_repository.test.ts
+│   │   │   ├── result_repository.test.ts
+│   │   │   └── permission_repository.test.ts
 │   │   ├── question_repository.ts      # 「問題マスタ」シートの読み取り（7-1章）
-│   │   └── result_repository.ts        # 「受験結果」シートへの追記（11章、LockService利用）
+│   │   ├── result_repository.ts        # 「受験結果」シートへの追記（11章、LockService利用）
+│   │   └── permission_repository.ts    # 「受験許可」シートの読み取り（6-3章）
 │   │
 │   ├── infrastructure/                 # GAS組み込みAPIの薄いラッパー（テスト容易性のため分離）
 │   │   ├── __tests__/

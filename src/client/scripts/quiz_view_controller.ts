@@ -1,4 +1,5 @@
 import type { AnswerPayload, QuestionAnswer } from '../../shared/types/answer_payload';
+import { PERMISSION_DENIED_ERROR_MESSAGE } from '../../shared/constants';
 import { isExamineeRole, type ExamineeRole } from '../../shared/types/examinee_role';
 import type { QuizQuestion } from '../../shared/types/quiz_question';
 import type { CategoryScore, ScoringResult } from '../../shared/types/scoring_result';
@@ -444,8 +445,12 @@ const startExam = async (): Promise<void> => {
 
   let questions: QuizQuestion[];
   try {
-    questions = await fetchQuizQuestions(role);
+    questions = await fetchQuizQuestions(role, examineeValues.name);
   } catch (error) {
+    if (error instanceof Error && error.message === PERMISSION_DENIED_ERROR_MESSAGE) {
+      window.alert(`${examineeValues.name}様は受験を許可されていません。`);
+      return;
+    }
     window.alert('問題の取得に失敗しました。時間をおいて再度お試しください。');
     // eslint-disable-next-line no-console
     console.error('fetchQuizQuestions failed', error);
