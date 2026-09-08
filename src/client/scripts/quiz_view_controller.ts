@@ -286,7 +286,7 @@ export const renderCategoryScoreTable = (tableBody: HTMLElement, categoryScores:
     const row = createEl('tr');
     row.append(
       createEl('td', { text: score.categoryName }),
-      createEl('td', { text: `${score.totalScore} / ${score.questionCount * 100}` }),
+      createEl('td', { text: String(score.totalScore) }),
       createEl('td', { text: `${score.correctRate}%` }),
       createEl('td', { text: String(score.descriptiveSubmittedCount) }),
     );
@@ -345,6 +345,7 @@ interface ResultScreenElements {
   scoreCmyk: HTMLElement;
   choiceSummary: HTMLElement;
   categoryTableBody: HTMLElement;
+  categoryProvisionalNotice: HTMLElement;
   descriptiveSection: HTMLElement;
   descriptiveWaitMessage: HTMLElement;
   descriptiveError: HTMLElement;
@@ -360,6 +361,7 @@ const getResultScreenElements = (): ResultScreenElements => ({
   scoreCmyk: getRequiredElement('result-score-cmyk'),
   choiceSummary: getRequiredElement('result-choice-summary'),
   categoryTableBody: getRequiredElement('result-category-table-body'),
+  categoryProvisionalNotice: getRequiredElement('result-category-provisional-notice'),
   descriptiveSection: getRequiredElement('result-descriptive-section'),
   descriptiveWaitMessage: getRequiredElement('result-descriptive-wait-message'),
   descriptiveError: getRequiredElement('result-descriptive-error'),
@@ -369,16 +371,25 @@ const getResultScreenElements = (): ResultScreenElements => ({
 /**
  * 記述式のバックグラウンド採点結果を結果画面へ描画する（10-1章）。1問ごとに入力回答・
  * スコア・参考回答・フィードバックを表示し、採点中スピナー・案内文を非表示にする。
- * あわせて、選択式のみの暫定値だった総合正解率・分野別正解率を、記述式を含む最終値へ更新する（10-3章）。
- * 記述式問題が0問だった場合はこのセクション自体を非表示にする。
+ * あわせて、選択式のみの暫定値だった総合正解率・分野別正解率を、記述式を含む最終値へ更新し、
+ * 「選択式のみ暫定値」である旨の案内文（categoryProvisionalNotice）を非表示にする（10-3, 10-4章）。
+ * 記述式問題が0問だった場合はこのセクション自体を非表示にする（この場合も最終結果のため案内文は非表示にする）。
  */
 export const renderDescriptiveScoringResult = (
   elements: Pick<
     ResultScreenElements,
-    'scoreCmyk' | 'choiceSummary' | 'categoryTableBody' | 'descriptiveSection' | 'descriptiveWaitMessage' | 'descriptiveItems'
+    | 'scoreCmyk'
+    | 'choiceSummary'
+    | 'categoryTableBody'
+    | 'categoryProvisionalNotice'
+    | 'descriptiveSection'
+    | 'descriptiveWaitMessage'
+    | 'descriptiveItems'
   >,
   result: DescriptiveScoringResult,
 ): void => {
+  elements.categoryProvisionalNotice.style.display = 'none';
+
   if (result.items.length === 0) {
     elements.descriptiveSection.style.display = 'none';
   } else {
@@ -435,6 +446,7 @@ export const pollDescriptiveScoring = async (
     | 'scoreCmyk'
     | 'choiceSummary'
     | 'categoryTableBody'
+    | 'categoryProvisionalNotice'
     | 'descriptiveSection'
     | 'descriptiveWaitMessage'
     | 'descriptiveError'

@@ -316,7 +316,7 @@ describe('renderCategoryScoreTable', () => {
 
     const cells = tableBody.querySelectorAll('td');
     expect(cells[0]?.textContent).toBe('コーディング');
-    expect(cells[1]?.textContent).toBe('300 / 400');
+    expect(cells[1]?.textContent).toBe('300');
     expect(cells[2]?.textContent).toBe('75%');
     expect(cells[3]?.textContent).toBe('2');
   });
@@ -392,6 +392,7 @@ const buildDescriptiveScoringElements = () => ({
   })(),
   choiceSummary: document.createElement('p'),
   categoryTableBody: document.createElement('tbody'),
+  categoryProvisionalNotice: document.createElement('p'),
   descriptiveSection: document.createElement('div'),
   descriptiveWaitMessage: document.createElement('div'),
   descriptiveError: document.createElement('p'),
@@ -409,6 +410,7 @@ describe('renderDescriptiveScoringResult', () => {
     renderDescriptiveScoringResult(elements, result);
 
     expect(elements.descriptiveWaitMessage.style.display).toBe('none');
+    expect(elements.categoryProvisionalNotice.style.display).toBe('none');
     const cardText = elements.descriptiveItems.textContent ?? '';
     expect(cardText).toContain('回答内容');
     expect(cardText).toContain('70点');
@@ -445,6 +447,7 @@ describe('renderDescriptiveScoringResult', () => {
     renderDescriptiveScoringResult(elements, result);
 
     expect(elements.descriptiveSection.style.display).toBe('none');
+    expect(elements.categoryProvisionalNotice.style.display).toBe('none');
   });
 });
 
