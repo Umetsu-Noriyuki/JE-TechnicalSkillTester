@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
   CATEGORY_QUOTA,
   EXAM_DURATION_SECONDS,
+  PERMISSION_DENIED_ERROR_MESSAGE,
   REMAINING_TIME_WARNING_SECONDS,
   ROLE_LABELS,
   TOTAL_QUESTION_COUNT,
@@ -22,6 +23,10 @@ describe('shared/constants', () => {
 
   test('残り時間の警告閾値は5分（300秒）である', () => {
     expect(REMAINING_TIME_WARNING_SECONDS).toBe(300);
+  });
+
+  test('受験許可エラーの識別メッセージが定義されている', () => {
+    expect(PERMISSION_DENIED_ERROR_MESSAGE).toBe('PERMISSION_DENIED');
   });
 
   test('全ての受験者区分にラベルが定義されている', () => {

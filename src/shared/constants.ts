@@ -17,3 +17,10 @@ export const ROLE_LABELS: Readonly<Record<ExamineeRole, string>> = {
   newhire: '未経験の新入社員',
   junior: '入社3年目までの社員',
 };
+
+/**
+ * 受験許可チェック（入社希望者のみ、6-3章）に落ちた際に getQuizQuestions がスローするエラーの
+ * メッセージ本文。クライアントはこの値と一致するかどうかで、通信エラー等の他の失敗と区別する。
+ * 表示用の氏名（未加工の入力値）は、サーバーへ送らずクライアント側の入力値をそのまま使う。
+ */
+export const PERMISSION_DENIED_ERROR_MESSAGE = 'PERMISSION_DENIED';

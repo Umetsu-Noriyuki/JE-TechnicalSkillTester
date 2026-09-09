@@ -1,9 +1,21 @@
 import type { AnswerPayload, QuestionAnswer } from '../../shared/types/answer_payload';
+import { PERMISSION_DENIED_ERROR_MESSAGE } from '../../shared/constants';
+import type { DescriptiveScoringPollStatus, DescriptiveScoringResult } from '../../shared/types/descriptive_scoring';
 import { isExamineeRole, type ExamineeRole } from '../../shared/types/examinee_role';
 import type { QuizQuestion } from '../../shared/types/quiz_question';
-import type { CategoryScore, ScoringResult } from '../../shared/types/scoring_result';
-import { fetchQuizQuestions, submitExamResult } from './api_client';
+import type { CategoryScore } from '../../shared/types/scoring_result';
+import type { SubmitResultResponse } from '../../shared/types/submit_result_response';
+import {
+  fetchDescriptiveScoringResult,
+  fetchDescriptiveScoringStatus,
+  fetchQuizQuestions,
+  startDescriptiveScoring,
+  submitExamResult,
+} from './api_client';
 import { createExamTimer, formatDurationJapanese, formatElapsedTime, isRemainingTimeWarning } from './timer';
+
+/** 記述式バックグラウンド採点のポーリング間隔（ミリ秒）。 */
+const DESCRIPTIVE_SCORING_POLL_INTERVAL_MILLISECONDS = 10000;
 
 export interface ExamineeInputValues {
   name: string;
@@ -274,7 +286,7 @@ export const renderCategoryScoreTable = (tableBody: HTMLElement, categoryScores:
     const row = createEl('tr');
     row.append(
       createEl('td', { text: score.categoryName }),
-      createEl('td', { text: `${score.choiceCorrectCount} / ${score.choiceQuestionCount}` }),
+      createEl('td', { text: String(score.totalScore) }),
       createEl('td', { text: `${score.correctRate}%` }),
       createEl('td', { text: String(score.descriptiveSubmittedCount) }),
     );
@@ -333,6 +345,11 @@ interface ResultScreenElements {
   scoreCmyk: HTMLElement;
   choiceSummary: HTMLElement;
   categoryTableBody: HTMLElement;
+  categoryProvisionalNotice: HTMLElement;
+  descriptiveSection: HTMLElement;
+  descriptiveWaitMessage: HTMLElement;
+  descriptiveError: HTMLElement;
+  descriptiveItems: HTMLElement;
 }
 
 const getResultScreenElements = (): ResultScreenElements => ({
@@ -344,7 +361,124 @@ const getResultScreenElements = (): ResultScreenElements => ({
   scoreCmyk: getRequiredElement('result-score-cmyk'),
   choiceSummary: getRequiredElement('result-choice-summary'),
   categoryTableBody: getRequiredElement('result-category-table-body'),
+  categoryProvisionalNotice: getRequiredElement('result-category-provisional-notice'),
+  descriptiveSection: getRequiredElement('result-descriptive-section'),
+  descriptiveWaitMessage: getRequiredElement('result-descriptive-wait-message'),
+  descriptiveError: getRequiredElement('result-descriptive-error'),
+  descriptiveItems: getRequiredElement('result-descriptive-items'),
 });
+
+/**
+ * 記述式のバックグラウンド採点結果を結果画面へ描画する（10-1章）。1問ごとに入力回答・
+ * スコア・参考回答・フィードバックを表示し、採点中スピナー・案内文を非表示にする。
+ * あわせて、選択式のみの暫定値だった総合正解率・分野別正解率を、記述式を含む最終値へ更新し、
+ * 「選択式のみ暫定値」である旨の案内文（categoryProvisionalNotice）を非表示にする（10-3, 10-4章）。
+ * 記述式問題が0問だった場合はこのセクション自体を非表示にする（この場合も最終結果のため案内文は非表示にする）。
+ */
+export const renderDescriptiveScoringResult = (
+  elements: Pick<
+    ResultScreenElements,
+    | 'scoreCmyk'
+    | 'choiceSummary'
+    | 'categoryTableBody'
+    | 'categoryProvisionalNotice'
+    | 'descriptiveSection'
+    | 'descriptiveWaitMessage'
+    | 'descriptiveItems'
+  >,
+  result: DescriptiveScoringResult,
+): void => {
+  elements.categoryProvisionalNotice.style.display = 'none';
+
+  if (result.items.length === 0) {
+    elements.descriptiveSection.style.display = 'none';
+  } else {
+    elements.descriptiveWaitMessage.style.display = 'none';
+    elements.descriptiveItems.replaceChildren();
+
+    result.items.forEach((item, index) => {
+      const card = createEl('div', { className: 'descriptive-score-card' });
+      const dl = createEl('dl');
+      dl.append(
+        createEl('dt', { text: `記述式${index + 1} 入力回答` }),
+        createEl('dd', { text: item.studentAnswer.trim() === '' ? '（未回答）' : item.studentAnswer }),
+        createEl('dt', { text: 'スコア' }),
+        createEl('dd', { text: `${item.score}点` }),
+        createEl('dt', { text: '参考回答' }),
+        createEl('dd', { text: item.referenceAnswer }),
+        createEl('dt', { text: 'フィードバック' }),
+        createEl('dd', { text: item.feedback }),
+      );
+      card.appendChild(dl);
+      elements.descriptiveItems.appendChild(card);
+    });
+  }
+
+  populateScoreCmyk(elements.scoreCmyk, result.scoringResult.overallCorrectRate);
+  elements.choiceSummary.textContent = `全${result.scoringResult.questionCount}問の得点合計 ${result.scoringResult.totalScore}点（選択式は正誤、記述式はGemini採点結果を含む）`;
+  renderCategoryScoreTable(elements.categoryTableBody, result.scoringResult.categoryScores);
+};
+
+export interface DescriptiveScoringPollDeps {
+  fetchStatus: (resultId: number) => Promise<DescriptiveScoringPollStatus>;
+  fetchResult: (resultId: number, payload: AnswerPayload) => Promise<DescriptiveScoringResult>;
+  sleep: (milliseconds: number) => Promise<void>;
+  pollIntervalMilliseconds: number;
+}
+
+const defaultDescriptiveScoringPollDeps: DescriptiveScoringPollDeps = {
+  fetchStatus: fetchDescriptiveScoringStatus,
+  fetchResult: fetchDescriptiveScoringResult,
+  sleep: (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
+  pollIntervalMilliseconds: DESCRIPTIVE_SCORING_POLL_INTERVAL_MILLISECONDS,
+};
+
+/**
+ * 記述式バックグラウンド採点の完了を一定間隔でポーリングし、完了したら最終結果を1回だけ取得して描画する（10-1章）。
+ * ポーリング自体が失敗した場合（通信エラー等）も、バックグラウンド採点処理自体はGAS側で継続しているため、
+ * 静かに再試行を続ける（画面上にエラーを出さない）。最終結果の取得に失敗した場合のみエラー表示する。
+ */
+export const pollDescriptiveScoring = async (
+  resultId: number,
+  payload: AnswerPayload,
+  elements: Pick<
+    ResultScreenElements,
+    | 'scoreCmyk'
+    | 'choiceSummary'
+    | 'categoryTableBody'
+    | 'categoryProvisionalNotice'
+    | 'descriptiveSection'
+    | 'descriptiveWaitMessage'
+    | 'descriptiveError'
+    | 'descriptiveItems'
+  >,
+  deps: DescriptiveScoringPollDeps = defaultDescriptiveScoringPollDeps,
+): Promise<void> => {
+  for (;;) {
+    let status: DescriptiveScoringPollStatus;
+    try {
+      status = await deps.fetchStatus(resultId);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('記述式採点状況の確認に失敗しました', error);
+      await deps.sleep(deps.pollIntervalMilliseconds);
+      continue;
+    }
+    if (status === 'completed') {
+      break;
+    }
+    await deps.sleep(deps.pollIntervalMilliseconds);
+  }
+
+  try {
+    const result = await deps.fetchResult(resultId, payload);
+    renderDescriptiveScoringResult(elements, result);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('記述式採点結果の取得に失敗しました', error);
+    elements.descriptiveError.style.display = '';
+  }
+};
 
 interface FinishScreenElements {
   screen: HTMLElement;
@@ -368,7 +502,9 @@ const readExamineeInputValues = (): ExamineeInputValues => ({
 
 /**
  * 「採点」／「回答終了」ボタン押下時の処理（9-4章, 10章, 11章）：submitResultへ送信→
- * 受験者区分に応じて結果画面／終了画面へ切り替えて表示する。
+ * 受験者区分に応じて結果画面／終了画面へ切り替えて表示する（この時点の正解率は選択式のみの暫定値）。
+ * 続けて記述式のバックグラウンド採点を開始し、社員区分の場合は完了までポーリングして最終値へ更新する。
+ * 画面を閉じてもバックグラウンド採点処理（GAS側）はそのまま継続する（10-1章）。
  * 送信に失敗した場合は false を返す（呼び出し側で再試行できるよう画面状態は変更しない）。
  */
 const finishExam = async (
@@ -390,9 +526,9 @@ const finishExam = async (
     isTimedOut,
   };
 
-  let scoringResult: ScoringResult;
+  let response: SubmitResultResponse;
   try {
-    scoringResult = await submitExamResult(payload);
+    response = await submitExamResult(payload);
   } catch (error) {
     window.alert('採点結果の送信に失敗しました。時間をおいて再度お試しください。');
     // eslint-disable-next-line no-console
@@ -410,19 +546,41 @@ const finishExam = async (
     finishElements.duration.textContent = durationText;
     finishElements.recordedAt.textContent = recordedAt;
     finishElements.screen.style.display = '';
-    return true;
+  } else {
+    const resultElements = getResultScreenElements();
+    resultElements.examineeName.textContent = examineeValues.name;
+    resultElements.examineeDetail.textContent = `${examineeValues.employeeNumber ?? ''} ／ ${examineeValues.department ?? ''}`;
+    resultElements.duration.textContent = durationText;
+    resultElements.recordedAt.textContent = recordedAt;
+    populateScoreCmyk(resultElements.scoreCmyk, response.scoringResult.overallCorrectRate);
+    resultElements.choiceSummary.textContent = `選択式の得点合計 ${response.scoringResult.totalScore}点（記述式は採点中です）`;
+    renderCategoryScoreTable(resultElements.categoryTableBody, response.scoringResult.categoryScores);
+    resultElements.screen.style.display = '';
+
+    void pollDescriptiveScoring(response.resultId, payload, resultElements);
   }
 
-  const resultElements = getResultScreenElements();
-  resultElements.examineeName.textContent = examineeValues.name;
-  resultElements.examineeDetail.textContent = `${examineeValues.employeeNumber ?? ''} ／ ${examineeValues.department ?? ''}`;
-  resultElements.duration.textContent = durationText;
-  resultElements.recordedAt.textContent = recordedAt;
-  populateScoreCmyk(resultElements.scoreCmyk, scoringResult.overallCorrectRate);
-  resultElements.choiceSummary.textContent = `選択式${scoringResult.choiceQuestionCount}問中 ${scoringResult.choiceCorrectCount}問 正解`;
-  renderCategoryScoreTable(resultElements.categoryTableBody, scoringResult.categoryScores);
-  resultElements.screen.style.display = '';
+  startDescriptiveScoring(response.resultId, payload).catch((error: unknown) => {
+    // eslint-disable-next-line no-console
+    console.error('startDescriptiveScoring failed', error);
+  });
+
   return true;
+};
+
+/**
+ * error が受験許可チェック（6-3章）の拒否エラーかどうかを判定する。
+ * google.script.run の withFailureHandler が渡すエラーオブジェクトは、GASのサンドボックス化
+ * された別のJSレルムで生成されるため、このページの `Error` コンストラクタとプロトタイプ
+ * チェーンが一致せず `error instanceof Error` が false になりうる。そのため instanceof には
+ * 頼らず、message プロパティの有無・内容のみで判定する。
+ */
+export const isPermissionDeniedError = (error: unknown): boolean => {
+  if (typeof error !== 'object' || error === null || !('message' in error)) {
+    return false;
+  }
+  const message = (error as { message: unknown }).message;
+  return typeof message === 'string' && message.includes(PERMISSION_DENIED_ERROR_MESSAGE);
 };
 
 /**
@@ -444,8 +602,12 @@ const startExam = async (): Promise<void> => {
 
   let questions: QuizQuestion[];
   try {
-    questions = await fetchQuizQuestions(role);
+    questions = await fetchQuizQuestions(role, examineeValues.name);
   } catch (error) {
+    if (isPermissionDeniedError(error)) {
+      window.alert(`${examineeValues.name}様は受験を許可されていません。`);
+      return;
+    }
     window.alert('問題の取得に失敗しました。時間をおいて再度お試しください。');
     // eslint-disable-next-line no-console
     console.error('fetchQuizQuestions failed', error);

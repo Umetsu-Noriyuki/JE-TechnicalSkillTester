@@ -1,13 +1,17 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type { DescriptiveScoringResult } from '../../../shared/types/descriptive_scoring';
 import type { CategoryScore } from '../../../shared/types/scoring_result';
 import type { QuizQuestion } from '../../../shared/types/quiz_question';
 import {
   collectAnswers,
   formatRecordedAt,
+  isPermissionDeniedError,
   jumpToFirstUnanswered,
+  pollDescriptiveScoring,
   populateScoreCmyk,
   renderCategoryScoreTable,
+  renderDescriptiveScoringResult,
   renderNavGrid,
   renderQuizQuestions,
   showTimeoutState,
@@ -305,14 +309,14 @@ describe('renderCategoryScoreTable', () => {
   test('区分ごとの正解率行を描画する', () => {
     const tableBody = document.createElement('tbody');
     const categoryScores: CategoryScore[] = [
-      { categoryName: 'コーディング', choiceQuestionCount: 4, choiceCorrectCount: 3, correctRate: 75, descriptiveSubmittedCount: 2 },
+      { categoryName: 'コーディング', questionCount: 4, totalScore: 300, correctRate: 75, descriptiveSubmittedCount: 2 },
     ];
 
     renderCategoryScoreTable(tableBody, categoryScores);
 
     const cells = tableBody.querySelectorAll('td');
     expect(cells[0]?.textContent).toBe('コーディング');
-    expect(cells[1]?.textContent).toBe('3 / 4');
+    expect(cells[1]?.textContent).toBe('300');
     expect(cells[2]?.textContent).toBe('75%');
     expect(cells[3]?.textContent).toBe('2');
   });
@@ -344,5 +348,161 @@ describe('formatRecordedAt', () => {
     const date = new Date(2026, 3, 10, 14, 32);
 
     expect(formatRecordedAt(date)).toBe('2026/04/10 14:32');
+  });
+});
+
+describe('isPermissionDeniedError', () => {
+  test('通常のErrorインスタンスでmessageが一致する場合はtrue', () => {
+    expect(isPermissionDeniedError(new Error('PERMISSION_DENIED'))).toBe(true);
+  });
+
+  test('google.script.run経由で渡される、ページのErrorとプロトタイプが異なる（instanceof Errorがfalseになる）オブジェクトでもtrueと判定する', () => {
+    // GASのサンドボックス化されたiframe（別JSレルム）から渡されるエラーは、
+    // このページの Error.prototype を継承しないプレーンオブジェクトとして届くことがある。
+    const crossRealmError: unknown = Object.create(null, {
+      message: { value: 'PERMISSION_DENIED', enumerable: true },
+      name: { value: 'Error', enumerable: true },
+    });
+
+    expect(crossRealmError instanceof Error).toBe(false);
+    expect(isPermissionDeniedError(crossRealmError)).toBe(true);
+  });
+
+  test('messageにPERMISSION_DENIEDを含んでいれば前後に文字があってもtrue', () => {
+    expect(isPermissionDeniedError({ message: 'Exception: PERMISSION_DENIED' })).toBe(true);
+  });
+
+  test('無関係なエラーの場合はfalse', () => {
+    expect(isPermissionDeniedError(new Error('シート「問題マスタ」が見つかりません'))).toBe(false);
+  });
+
+  test('message文字列を持たない値の場合はfalse', () => {
+    expect(isPermissionDeniedError(null)).toBe(false);
+    expect(isPermissionDeniedError(undefined)).toBe(false);
+    expect(isPermissionDeniedError('PERMISSION_DENIED')).toBe(false);
+    expect(isPermissionDeniedError({})).toBe(false);
+  });
+});
+
+const buildDescriptiveScoringElements = () => ({
+  scoreCmyk: (() => {
+    const el = document.createElement('div');
+    el.innerHTML = '<span class="paper">0</span><span class="plate">0</span>';
+    return el;
+  })(),
+  choiceSummary: document.createElement('p'),
+  categoryTableBody: document.createElement('tbody'),
+  categoryProvisionalNotice: document.createElement('p'),
+  descriptiveSection: document.createElement('div'),
+  descriptiveWaitMessage: document.createElement('div'),
+  descriptiveError: document.createElement('p'),
+  descriptiveItems: document.createElement('div'),
+});
+
+describe('renderDescriptiveScoringResult', () => {
+  test('記述式1問ごとに入力回答・スコア・参考回答・フィードバックを表示し、採点中表示を隠す', () => {
+    const elements = buildDescriptiveScoringElements();
+    const result: DescriptiveScoringResult = {
+      items: [{ questionId: 'q2', studentAnswer: '回答内容', score: 70, referenceAnswer: '模範回答', feedback: 'やや不足' }],
+      scoringResult: { overallCorrectRate: 85, questionCount: 2, totalScore: 170, categoryScores: [] },
+    };
+
+    renderDescriptiveScoringResult(elements, result);
+
+    expect(elements.descriptiveWaitMessage.style.display).toBe('none');
+    expect(elements.categoryProvisionalNotice.style.display).toBe('none');
+    const cardText = elements.descriptiveItems.textContent ?? '';
+    expect(cardText).toContain('回答内容');
+    expect(cardText).toContain('70点');
+    expect(cardText).toContain('模範回答');
+    expect(cardText).toContain('やや不足');
+  });
+
+  test('最終的な総合正解率・分野別正解率を反映する', () => {
+    const elements = buildDescriptiveScoringElements();
+    const result: DescriptiveScoringResult = {
+      items: [{ questionId: 'q2', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' }],
+      scoringResult: {
+        overallCorrectRate: 85,
+        questionCount: 2,
+        totalScore: 170,
+        categoryScores: [{ categoryName: 'SQL', questionCount: 1, totalScore: 70, correctRate: 70, descriptiveSubmittedCount: 1 }],
+      },
+    };
+
+    renderDescriptiveScoringResult(elements, result);
+
+    expect(Array.from(elements.scoreCmyk.children).map((el) => el.textContent)).toEqual(['85', '85']);
+    expect(elements.choiceSummary.textContent).toContain('170点');
+    expect(elements.categoryTableBody.querySelectorAll('td')[0]?.textContent).toBe('SQL');
+  });
+
+  test('記述式問題が0問の場合はセクション自体を非表示にする', () => {
+    const elements = buildDescriptiveScoringElements();
+    const result: DescriptiveScoringResult = {
+      items: [],
+      scoringResult: { overallCorrectRate: 100, questionCount: 1, totalScore: 100, categoryScores: [] },
+    };
+
+    renderDescriptiveScoringResult(elements, result);
+
+    expect(elements.descriptiveSection.style.display).toBe('none');
+    expect(elements.categoryProvisionalNotice.style.display).toBe('none');
+  });
+});
+
+describe('pollDescriptiveScoring', () => {
+  const buildDeps = (overrides: Partial<Parameters<typeof pollDescriptiveScoring>[3]> = {}) => ({
+    fetchStatus: vi.fn(),
+    fetchResult: vi.fn(),
+    sleep: vi.fn().mockResolvedValue(undefined),
+    pollIntervalMilliseconds: 10000,
+    ...overrides,
+  });
+
+  test('pendingの間は待機を挟みつつ再確認し、completedになったら最終結果を取得して描画する', async () => {
+    const elements = buildDescriptiveScoringElements();
+    const result: DescriptiveScoringResult = {
+      items: [{ questionId: 'q2', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' }],
+      scoringResult: { overallCorrectRate: 85, questionCount: 2, totalScore: 170, categoryScores: [] },
+    };
+    const deps = buildDeps({
+      fetchStatus: vi.fn().mockResolvedValueOnce('pending').mockResolvedValueOnce('completed'),
+      fetchResult: vi.fn().mockResolvedValue(result),
+    });
+
+    await pollDescriptiveScoring(5, { examinee: { role: 'newhire', name: '山田' }, answers: [], elapsedSeconds: 0, isTimedOut: false }, elements, deps);
+
+    expect(deps.fetchStatus).toHaveBeenCalledTimes(2);
+    expect(deps.sleep).toHaveBeenCalledWith(10000);
+    expect(deps.fetchResult).toHaveBeenCalledWith(5, expect.objectContaining({ examinee: expect.objectContaining({ name: '山田' }) }));
+    expect(elements.descriptiveWaitMessage.style.display).toBe('none');
+  });
+
+  test('状況確認が失敗しても静かに再試行を続け、エラー表示はしない', async () => {
+    const elements = buildDescriptiveScoringElements();
+    const result: DescriptiveScoringResult = { items: [], scoringResult: { overallCorrectRate: 0, questionCount: 0, totalScore: 0, categoryScores: [] } };
+    const deps = buildDeps({
+      fetchStatus: vi.fn().mockRejectedValueOnce(new Error('network error')).mockResolvedValueOnce('completed'),
+      fetchResult: vi.fn().mockResolvedValue(result),
+    });
+
+    await pollDescriptiveScoring(5, { examinee: { role: 'newhire', name: '山田' }, answers: [], elapsedSeconds: 0, isTimedOut: false }, elements, deps);
+
+    expect(deps.fetchStatus).toHaveBeenCalledTimes(2);
+    expect(deps.fetchResult).toHaveBeenCalled();
+    expect(elements.descriptiveError.style.display).not.toBe('none');
+  });
+
+  test('最終結果の取得に失敗した場合はエラー表示する', async () => {
+    const elements = buildDescriptiveScoringElements();
+    const deps = buildDeps({
+      fetchStatus: vi.fn().mockResolvedValue('completed'),
+      fetchResult: vi.fn().mockRejectedValue(new Error('fetch error')),
+    });
+
+    await pollDescriptiveScoring(5, { examinee: { role: 'newhire', name: '山田' }, answers: [], elapsedSeconds: 0, isTimedOut: false }, elements, deps);
+
+    expect(elements.descriptiveError.style.display).toBe('');
   });
 });
