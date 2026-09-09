@@ -1,0 +1,23 @@
+<div id="viewer-access-key-screen" class="screen" data-log-row-number="<?= viewerLogRowNumber ?>">
+  <div class="nav">
+    <span class="nav-brand">プログラミングスキル判定テスト</span>
+    <span class="text-muted" style="font-size: 13px">閲覧画面</span>
+  </div>
+  <div class="screen-body" style="max-width: 420px">
+    <h1 style="font-size: 32px; margin: 0 0 16px">Access Key</h1>
+    <p style="font-size: 15px">閲覧画面を開くには、管理者から共有されたAccess Keyを入力してください。</p>
+    <div class="field-group">
+      <div class="field">
+        <label for="viewer-access-key-input">Access Key</label>
+        <input class="input" id="viewer-access-key-input" type="password" autocomplete="off" />
+      </div>
+      <button id="viewer-access-key-submit-button" class="btn btn-primary btn-block" type="button">開く</button>
+      <p
+        id="viewer-access-key-error"
+        style="display: none; margin: 0; font-size: 13px; color: var(--color-accent-2-700)"
+      >
+        Access Keyが正しくありません。
+      </p>
+    </div>
+  </div>
+</div>

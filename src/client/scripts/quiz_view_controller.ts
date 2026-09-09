@@ -40,7 +40,7 @@ export const validateExamineeInput = (values: ExamineeInputValues, role: Examine
   return null;
 };
 
-const createEl = <K extends keyof HTMLElementTagNameMap>(
+export const createEl = <K extends keyof HTMLElementTagNameMap>(
   tag: K,
   options?: { className?: string; text?: string },
 ): HTMLElementTagNameMap[K] => {
@@ -300,7 +300,7 @@ export const formatRecordedAt = (date: Date): string => {
   return `${date.getFullYear()}/${pad2(date.getMonth() + 1)}/${pad2(date.getDate())} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 };
 
-const getRequiredElement = <T extends HTMLElement>(id: string): T => {
+export const getRequiredElement = <T extends HTMLElement>(id: string): T => {
   const element = document.getElementById(id);
   if (element === null) {
     throw new Error(`要素が見つかりません: #${id}`);

@@ -6,6 +6,7 @@ import {
   REMAINING_TIME_WARNING_SECONDS,
   ROLE_LABELS,
   TOTAL_QUESTION_COUNT,
+  VIEWER_ACCESS_KEY_INVALID_ERROR_MESSAGE,
 } from '../constants';
 
 describe('shared/constants', () => {
@@ -27,6 +28,10 @@ describe('shared/constants', () => {
 
   test('受験許可エラーの識別メッセージが定義されている', () => {
     expect(PERMISSION_DENIED_ERROR_MESSAGE).toBe('PERMISSION_DENIED');
+  });
+
+  test('閲覧画面のAccess Key検証エラーの識別メッセージが定義されている', () => {
+    expect(VIEWER_ACCESS_KEY_INVALID_ERROR_MESSAGE).toBe('VIEWER_ACCESS_KEY_INVALID');
   });
 
   test('全ての受験者区分にラベルが定義されている', () => {

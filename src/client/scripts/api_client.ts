@@ -1,5 +1,7 @@
 import type { AnswerPayload } from '../../shared/types/answer_payload';
 import type { DescriptiveScoringPollStatus, DescriptiveScoringResult } from '../../shared/types/descriptive_scoring';
+import type { ExamResultDetail } from '../../shared/types/exam_result_detail';
+import type { ExamResultSearchFilter, ExamResultSummary } from '../../shared/types/exam_result_search';
 import type { QuizQuestion } from '../../shared/types/quiz_question';
 import type { SubmitResultResponse } from '../../shared/types/submit_result_response';
 
@@ -11,6 +13,9 @@ interface GoogleScriptRun {
   scoreDescriptiveQuestions(resultId: number, payload: AnswerPayload): void;
   getDescriptiveScoringStatus(resultId: number): void;
   getDescriptiveScoringResult(resultId: number, payload: AnswerPayload): void;
+  verifyViewerAccessKey(logRowNumber: number, accessKey: string): void;
+  searchExamResults(accessKey: string, filter: ExamResultSearchFilter): void;
+  getExamResultDetail(accessKey: string, rowNumber: number): void;
 }
 
 declare const google: { script: { run: GoogleScriptRun } };
@@ -72,4 +77,31 @@ export const fetchDescriptiveScoringResult = (
       .withSuccessHandler((value) => resolve(value as DescriptiveScoringResult))
       .withFailureHandler((error) => reject(error))
       .getDescriptiveScoringResult(resultId, payload);
+  });
+
+/** 閲覧画面（15章）：Access Key入力画面の送信時に呼び出す。 */
+export const verifyViewerAccessKey = (logRowNumber: number, accessKey: string): Promise<boolean> =>
+  new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((value) => resolve(value as boolean))
+      .withFailureHandler((error) => reject(error))
+      .verifyViewerAccessKey(logRowNumber, accessKey);
+  });
+
+/** 閲覧画面（15章）：「検索開始」ボタン押下時に呼び出す。 */
+export const searchExamResults = (accessKey: string, filter: ExamResultSearchFilter): Promise<ExamResultSummary[]> =>
+  new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((value) => resolve(value as ExamResultSummary[]))
+      .withFailureHandler((error) => reject(error))
+      .searchExamResults(accessKey, filter);
+  });
+
+/** 閲覧画面（15章）：検索結果一覧から1件選択した際に呼び出す。 */
+export const fetchExamResultDetail = (accessKey: string, rowNumber: number): Promise<ExamResultDetail> =>
+  new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((value) => resolve(value as ExamResultDetail))
+      .withFailureHandler((error) => reject(error))
+      .getExamResultDetail(accessKey, rowNumber);
   });
