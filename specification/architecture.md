@@ -36,19 +36,26 @@ src/
 │   │   │   ├── submit_result.test.ts
 │   │   │   ├── score_descriptive_questions.test.ts
 │   │   │   ├── get_descriptive_scoring_status.test.ts
-│   │   │   └── get_descriptive_scoring_result.test.ts
-│   │   ├── do_get.ts                   # doGet(e)：roleパラメータ検証・HTML出力（3-4, 4-1章）
+│   │   │   ├── get_descriptive_scoring_result.test.ts
+│   │   │   ├── verify_viewer_access_key.test.ts
+│   │   │   ├── search_exam_results.test.ts
+│   │   │   └── get_exam_result_detail.test.ts
+│   │   ├── do_get.ts                   # doGet(e)：roleパラメータ検証・HTML出力／role=viewerの閲覧アクセス制御（3-4, 4-1, 15-1章）
 │   │   ├── get_quiz_questions.ts       # getQuizQuestions(role, name)：受験許可チェック・出題（6-3, 6-4, 7章）
 │   │   ├── submit_result.ts            # submitResult(payload)：選択式の採点・記述式の提出内容を即時記録（10-1章 段階1）
 │   │   ├── score_descriptive_questions.ts # scoreDescriptiveQuestions(resultId, payload)：記述式のバックグラウンド採点・結果上書き（10-1章 段階2）
 │   │   ├── get_descriptive_scoring_status.ts # getDescriptiveScoringStatus(resultId)：バックグラウンド採点の完了確認（軽量なポーリング用、10-1章）
-│   │   └── get_descriptive_scoring_result.ts # getDescriptiveScoringResult(resultId, payload)：採点完了後に最終結果を1回だけ取得（10-1章）
+│   │   ├── get_descriptive_scoring_result.ts # getDescriptiveScoringResult(resultId, payload)：採点完了後に最終結果を1回だけ取得（10-1章）
+│   │   ├── verify_viewer_access_key.ts # verifyViewerAccessKey(logRowNumber, accessKey)：閲覧画面Access Keyの検証・閲覧ログE列への記録（15-1, 15-2章）
+│   │   ├── search_exam_results.ts      # searchExamResults(accessKey, filter)：Access Key再検証のうえ「受験結果」シートをAND条件検索（15-3章）
+│   │   └── get_exam_result_detail.ts   # getExamResultDetail(accessKey, rowNumber)：Access Key再検証のうえ選択結果の詳細をM列から再集計して返す（15-5章）
 │   │
 │   ├── domain/                         # ドメインロジック（GAS APIに依存しない純粋関数群）
 │   │   ├── models/
 │   │   │   ├── __tests__/
 │   │   │   ├── question.ts             # Question（問題マスタ1行分の内部表現、正解情報を含む）
-│   │   │   └── exam_result_record.ts   # 「受験結果」シート1行分の型（記述式採点列N〜Tを含む、11-2章）
+│   │   │   ├── exam_result_record.ts   # 「受験結果」シート1行分の型（記述式採点列N〜Tを含む、11-2章）
+│   │   │   └── exam_result_row.ts      # 「受験結果」シート1行分を読み取った構造化データの型（15章、閲覧画面用）
 │   │   │
 │   │   └── services/
 │   │       ├── __tests__/
@@ -58,39 +65,49 @@ src/
 │   │       │   ├── answer_detail_builder.test.ts
 │   │       │   ├── answer_scorer.test.ts
 │   │       │   ├── descriptive_scorer.test.ts
-│   │       │   └── examinee_permission_checker.test.ts
+│   │       │   ├── examinee_permission_checker.test.ts
+│   │       │   ├── viewer_login_checker.test.ts
+│   │       │   └── exam_result_search.test.ts
 │   │       ├── question_selector.ts    # 区分別抽出・記述式按分ロジック（7-2, 7-3, 7-4章）
 │   │       ├── choice_shuffler.ts      # 選択肢シャッフルと正誤対応の保持（8章）
 │   │       ├── scorer.ts               # 得点の集計・正解率算出（純粋関数、10-3章）
 │   │       ├── answer_detail_builder.ts # 受験結果シートM列用の回答詳細生成（11-2章）
 │   │       ├── answer_scorer.ts        # 問題マスタと回答の突き合わせ（純粋関数。3つのentry_pointsで共通利用、10-1章）
 │   │       ├── descriptive_scorer.ts   # 記述式7問を1リクエストにまとめたGemini採点・再試行（例外的にinfrastructureへ依存、10-2章）
-│   │       └── examinee_permission_checker.ts # 入力氏名と受験許可氏名一覧の照合（純粋関数、6-3章）
+│   │       ├── examinee_permission_checker.ts # 入力氏名と受験許可氏名一覧の照合（純粋関数、6-3章）
+│   │       ├── viewer_login_checker.ts # Googleログイン状態（未ログイン／ドメイン外／許可ドメイン）の判定（純粋関数、15-1章）
+│   │       └── exam_result_search.ts   # 「受験結果」構造化データのAND条件絞り込み（純粋関数、15-3章）
 │   │
 │   ├── repositories/                   # スプレッドシートアクセス（Repositoryパターン）
 │   │   ├── __tests__/
 │   │   │   ├── question_repository.test.ts
 │   │   │   ├── result_repository.test.ts
-│   │   │   └── permission_repository.test.ts
+│   │   │   ├── permission_repository.test.ts
+│   │   │   ├── viewer_log_repository.test.ts
+│   │   │   └── exam_result_query_repository.test.ts
 │   │   ├── question_repository.ts      # 「問題マスタ」シートの読み取り（7-1章）
 │   │   ├── result_repository.ts        # 「受験結果」シートへの追記・記述式採点結果での上書き・完了確認（11章、LockService利用）
-│   │   └── permission_repository.ts    # 「受験許可」シートの読み取り（6-3章）
+│   │   ├── permission_repository.ts    # 「受験許可」シートの読み取り（6-3章）
+│   │   ├── viewer_log_repository.ts    # 「閲覧ログ」シートB1のAccess Key取得・検証、アクセスログの追記・更新（15-1, 15-2章）
+│   │   └── exam_result_query_repository.ts # 「受験結果」シートの全件・単一行の読み取り＋構造化（question_repository.tsと同様、パース処理を内包、15章）
 │   │
 │   ├── infrastructure/                 # GAS組み込みAPIの薄いラッパー（テスト容易性のため分離）
 │   │   ├── __tests__/
 │   │   │   ├── spreadsheet_client.test.ts
 │   │   │   ├── lock_service_client.test.ts
 │   │   │   ├── script_properties_client.test.ts
-│   │   │   └── gemini_client.test.ts
+│   │   │   ├── gemini_client.test.ts
+│   │   │   └── session_client.test.ts
 │   │   ├── spreadsheet_client.ts       # SpreadsheetApp.openById等のラッパー（行番号取得・特定範囲の読み書きを含む）
 │   │   ├── lock_service_client.ts      # LockService.getScriptLock()のラッパー（11-3章）
 │   │   ├── script_properties_client.ts # PropertiesServiceラッパー（SPREADSHEET_ID/GEMINI_API_KEY等の機密/環境値取得）
-│   │   └── gemini_client.ts            # UrlFetchApp経由でのGemini API呼び出し（1リクエスト単位、10-2章）
+│   │   ├── gemini_client.ts            # UrlFetchApp経由でのGemini API呼び出し（1リクエスト単位、10-2章）
+│   │   └── session_client.ts           # Session.getActiveUser().getEmail()のラッパー（15-1章）
 │   │
 │   └── config/
 │       ├── __tests__/
 │       │   └── constants.test.ts
-│       └── constants.ts                # シート名・LOCK待機時間・Geminiモデル名等、サーバー内部専用の定数
+│       └── constants.ts                # シート名・LOCK待機時間・Geminiモデル名・閲覧画面関連定数等、サーバー内部専用の定数
 │
 ├── client/                             # フロントエンド（HtmlServiceで配信するHTML／クライアントJS）
 │   ├── views/                          # HTMLテンプレート本体
@@ -102,16 +119,20 @@ src/
 │   │       ├── quiz_screen.html        # 受験画面（5章, 9章）
 │   │       ├── result_screen.html      # 結果画面（社員のみ表示, 10-4章）
 │   │       ├── finish_screen.html      # 終了画面（入社希望者向け, 10-4章）
+│   │       ├── viewer_access_key_screen.html # 閲覧画面：Access Key入力画面（15-1章）
+│   │       ├── viewer_screen.html      # 閲覧画面：検索条件・検索結果一覧・選択結果詳細（15-4章）
 │   │       └── script.html             # クライアントサイドJSの読込用（下記scriptsの内容を反映）
 │   │
 │   └── scripts/                        # クライアントサイドロジック（TypeScript、単体テスト対象）
 │       ├── __tests__/
 │       │   ├── timer.test.ts
 │       │   ├── api_client.test.ts
-│       │   └── quiz_view_controller.test.ts
+│       │   ├── quiz_view_controller.test.ts
+│       │   └── viewer_view_controller.test.ts
 │       ├── timer.ts                    # 経過時間表示・残り時間閾値判定（9-2, 9-3章）
-│       ├── api_client.ts               # google.script.run のPromiseラッパー（記述式バックグラウンド採点の開始・ポーリング呼び出しを含む）
-│       └── quiz_view_controller.ts     # 画面遷移・入力チェック・時間切れ時の操作無効化・記述式採点結果のポーリング表示（6章, 9-3, 9-4, 10-1, 10-4章）
+│       ├── api_client.ts               # google.script.run のPromiseラッパー（記述式バックグラウンド採点・閲覧画面の各呼び出しを含む）
+│       ├── quiz_view_controller.ts     # 画面遷移・入力チェック・時間切れ時の操作無効化・記述式採点結果のポーリング表示（6章, 9-3, 9-4, 10-1, 10-4章）
+│       └── viewer_view_controller.ts   # Access Key送信・検索条件送信・検索結果一覧／詳細の描画（15章）
 │
 └── shared/                             # サーバー・クライアント双方が参照する型・定数（APIの契約）
     ├── __tests__/
@@ -120,10 +141,13 @@ src/
     │   ├── examinee_role.ts            # ExamineeRole = 'applicant' | 'newhire' | 'junior'（4章）
     │   ├── quiz_question.ts            # クライアントに返す出題データの型（正解情報を含まない）
     │   ├── answer_payload.ts           # submitResult / scoreDescriptiveQuestions等へ送信する回答データの型（10-1章）
+    │   ├── answer_detail.ts            # 設問1問分の回答詳細の型（11-2章M列。answer_detail_builder.tsが再エクスポートする）
     │   ├── scoring_result.ts           # 総合・区分別の採点結果の型（10-3, 10-4章）
     │   ├── submit_result_response.ts   # submitResultの戻り値の型（resultId・選択式のみの暫定結果、10-1章）
-    │   └── descriptive_scoring.ts      # 記述式バックグラウンド採点のポーリング状況・最終結果の型（10-1章）
-    └── constants.ts                    # EXAM_DURATION_SEC, TOTAL_QUESTION_COUNT, CATEGORY_QUOTA等
+    │   ├── descriptive_scoring.ts      # 記述式バックグラウンド採点のポーリング状況・最終結果の型（10-1章）
+    │   ├── exam_result_search.ts       # 閲覧画面の検索条件・検索結果一覧要約の型（15-3章）
+    │   └── exam_result_detail.ts       # 閲覧画面の選択結果詳細の型（15-5章）
+    └── constants.ts                    # EXAM_DURATION_SEC, TOTAL_QUESTION_COUNT, CATEGORY_QUOTA, VIEWER_ACCESS_KEY_INVALID_ERROR_MESSAGE等
 ```
 
 ---

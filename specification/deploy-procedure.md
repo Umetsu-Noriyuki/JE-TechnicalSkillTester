@@ -68,12 +68,21 @@ cp .clasp.json.example .clasp.json
 ### 1-4. 問題マスタ／受験結果用スプレッドシートの用意
 
 1. 新規にGoogleスプレッドシートを作成する（1-2のApps Scriptプロジェクトとは別ファイルでよい。むしろ紐付けない）
-2. シート（タブ）を2つ用意し、**名前を厳密に一致させる**
+2. シート（タブ）を用意し、**名前を厳密に一致させる**
    - `問題マスタ`
    - `受験結果`
+   - `閲覧ログ`（15章、詳細は1-4-1）
 3. 「問題マスタ」シートの列構成は、`specification/JE-TechnicalSkillTester-spec.md` の7-1章（A:問題ID 〜 L:備考）に従って準備する
-4. 「受験結果」シートは1行目にヘッダーを用意しておく（記録は`submitResult`実行時にA〜M列へ自動追記される。列構成は同spec 11-2章を参照）
+4. 「受験結果」シートは1行目にヘッダーを用意しておく（記録は`submitResult`実行時にA〜M列へ、`scoreDescriptiveQuestions`実行時にF〜K列・M〜T列へ自動追記・上書きされる。列構成は同spec 11-2章を参照）
 5. スプレッドシートのURL（`https://docs.google.com/spreadsheets/d/【この部分】/edit`）から **スプレッドシートID** を控える
+
+#### 1-4-1. 「閲覧ログ」シートの用意（15章：閲覧画面）
+
+閲覧画面（`?role=viewer`）を使う場合のみ必要な設定。使わない場合はこの節を飛ばしてよい（未設定の場合、閲覧画面は常にAccess Key不一致として扱われ表示されない）。
+
+1. 「閲覧ログ」シートのB1セルに、閲覧画面のAccess Keyとする任意の文字列を設定する（第三者に推測されにくい文字列を推奨）
+2. 1〜3行目は上記のようなAccess Key設定・見出し等に自由に使ってよい（コード側は1〜3行目を読み書きしない）
+3. 4行目以降は、閲覧画面へのアクセスがあるたびにコード側が自動で追記する（A:アクセス日時、B:未ログイン、C:ドメイン外アカウント、D:利用者、E:結果。詳細はspec 15-2章）ため、事前に用意する必要はない
 
 ### 1-5. スクリプトプロパティへのスプレッドシートID登録
 
@@ -159,6 +168,14 @@ npm run build
 | 入社希望者 | `https://script.google.com/macros/s/【デプロイID】/exec?role=applicant` |
 | 未経験の新入社員 | `https://script.google.com/macros/s/【デプロイID】/exec?role=newhire` |
 | 入社3年目までの社員 | `https://script.google.com/macros/s/【デプロイID】/exec?role=junior` |
+
+### 3-4. 閲覧画面URL（社内関係者向け、15章）
+
+`role=viewer` は受験者向けではなく、`@jinearth.co.jp` のGoogleアカウントでログインした社内関係者専用のURLである。案内する際はAccess Key（1-4-1で設定した値）も別途安全な方法で伝えること（URLに含めない）。
+
+```
+https://script.google.com/macros/s/【デプロイID】/exec?role=viewer
+```
 
 ---
 

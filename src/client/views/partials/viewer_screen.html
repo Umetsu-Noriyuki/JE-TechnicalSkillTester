@@ -1,0 +1,126 @@
+<div id="viewer-screen" class="screen" style="display: none">
+  <div class="nav">
+    <span class="nav-brand">プログラミングスキル判定テスト</span>
+    <span class="text-muted" style="font-size: 13px">閲覧画面</span>
+  </div>
+  <div class="screen-body" style="display: flex; flex-direction: column; gap: 40px">
+    <div>
+      <h1 style="font-size: 32px; margin: 0 0 20px">受験結果の検索</h1>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px">
+        <div class="field">
+          <label for="viewer-search-recorded-at-from">受験日時（開始日）</label>
+          <input class="input" id="viewer-search-recorded-at-from" type="date" />
+        </div>
+        <div class="field">
+          <label for="viewer-search-recorded-at-to">受験日時（終了日）</label>
+          <input class="input" id="viewer-search-recorded-at-to" type="date" />
+        </div>
+        <div class="field">
+          <label for="viewer-search-role">受験者区分</label>
+          <select class="input" id="viewer-search-role">
+            <option value="">すべて</option>
+            <option value="入社希望者">入社希望者</option>
+            <option value="未経験の新入社員">未経験の新入社員</option>
+            <option value="入社3年目までの社員">入社3年目までの社員</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="viewer-search-name">氏名</label>
+          <input class="input" id="viewer-search-name" type="text" placeholder="部分一致" />
+        </div>
+        <div class="field">
+          <label for="viewer-search-employee-number">社員番号</label>
+          <input class="input" id="viewer-search-employee-number" type="text" placeholder="部分一致" />
+        </div>
+        <div class="field">
+          <label for="viewer-search-department">所属</label>
+          <input class="input" id="viewer-search-department" type="text" placeholder="部分一致" />
+        </div>
+      </div>
+      <button id="viewer-search-button" class="btn btn-primary" type="button" style="margin-top: 24px">
+        検索開始
+      </button>
+    </div>
+
+    <div>
+      <h3 style="margin: 0 0 16px">検索結果</h3>
+      <p id="viewer-search-empty-message" class="text-muted" style="display: none; font-size: 14px">
+        該当する受験結果がありません。
+      </p>
+      <div style="overflow-x: auto">
+        <table id="viewer-search-result-table" class="table" style="display: none; max-width: 1000px">
+          <thead>
+            <tr>
+              <th>受験日時</th>
+              <th>受験者区分</th>
+              <th>氏名</th>
+              <th>社員番号</th>
+              <th>所属</th>
+              <th>総合正解率</th>
+            </tr>
+          </thead>
+          <tbody id="viewer-search-result-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="viewer-detail-section" style="display: none; flex-direction: column; gap: 40px">
+      <div class="two-col" style="align-items: start">
+        <div>
+          <span id="viewer-detail-role-tag" class="tag tag-outline">—</span>
+          <h2 style="font-size: 32px; margin: 20px 0 0">受験結果詳細</h2>
+          <dl class="info-list" style="grid-template-columns: 110px minmax(0, 1fr); row-gap: 14px; font-size: 15px">
+            <dt>氏名</dt>
+            <dd id="viewer-detail-name">—</dd>
+            <dt>社員番号／所属</dt>
+            <dd id="viewer-detail-employee">—</dd>
+            <dt>所要時間</dt>
+            <dd id="viewer-detail-duration">—</dd>
+            <dt>記録日時</dt>
+            <dd id="viewer-detail-recorded-at">—</dd>
+          </dl>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 12px">
+          <div
+            class="text-muted"
+            style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase"
+          >
+            総合正解率
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 12px">
+            <div id="viewer-detail-score-cmyk" class="cmyk-num" style="font-size: 96px; font-weight: 600">
+              <span class="paper">0</span>
+              <span class="plate plate-c" aria-hidden="true">0</span>
+              <span class="plate plate-m" aria-hidden="true">0</span>
+              <span class="plate plate-y" aria-hidden="true">0</span>
+            </div>
+            <span style="font-size: 32px; font-weight: 600">%</span>
+          </div>
+          <p id="viewer-detail-choice-summary" style="margin: 12px 0 0; font-size: 15px">—</p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 20px">
+        <h3 style="margin: 0">分野別の正解率</h3>
+        <div style="overflow-x: auto">
+          <table class="table" style="max-width: 1000px">
+            <thead>
+              <tr>
+                <th style="width: 220px">区分</th>
+                <th style="width: 120px">得点</th>
+                <th style="width: 300px">正解率</th>
+                <th style="width: 110px">記述式 提出</th>
+              </tr>
+            </thead>
+            <tbody id="viewer-detail-category-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 20px">
+        <h3 style="margin: 0">記述式の回答詳細</h3>
+        <div id="viewer-detail-descriptive-items" style="display: flex; flex-direction: column; gap: 16px"></div>
+      </div>
+    </div>
+  </div>
+</div>

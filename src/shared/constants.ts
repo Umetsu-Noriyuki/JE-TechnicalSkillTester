@@ -24,3 +24,9 @@ export const ROLE_LABELS: Readonly<Record<ExamineeRole, string>> = {
  * 表示用の氏名（未加工の入力値）は、サーバーへ送らずクライアント側の入力値をそのまま使う。
  */
 export const PERMISSION_DENIED_ERROR_MESSAGE = 'PERMISSION_DENIED';
+
+/**
+ * 閲覧画面（15章）の検索・詳細取得関数が、Access Keyの検証に失敗した際にスローするエラーの
+ * メッセージ本文。クライアントはこの値と一致するかどうかで、通信エラー等の他の失敗と区別する。
+ */
+export const VIEWER_ACCESS_KEY_INVALID_ERROR_MESSAGE = 'VIEWER_ACCESS_KEY_INVALID';

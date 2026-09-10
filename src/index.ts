@@ -1,12 +1,17 @@
 import { doGet as doGetImpl } from './server/entry_points/do_get';
 import { getDescriptiveScoringResult as getDescriptiveScoringResultImpl } from './server/entry_points/get_descriptive_scoring_result';
 import { getDescriptiveScoringStatus as getDescriptiveScoringStatusImpl } from './server/entry_points/get_descriptive_scoring_status';
+import { getExamResultDetail as getExamResultDetailImpl } from './server/entry_points/get_exam_result_detail';
 import { getQuizQuestions as getQuizQuestionsImpl } from './server/entry_points/get_quiz_questions';
 import { include as includeImpl } from './server/entry_points/include';
 import { scoreDescriptiveQuestions as scoreDescriptiveQuestionsImpl } from './server/entry_points/score_descriptive_questions';
+import { searchExamResults as searchExamResultsImpl } from './server/entry_points/search_exam_results';
 import { submitResult as submitResultImpl } from './server/entry_points/submit_result';
+import { verifyViewerAccessKey as verifyViewerAccessKeyImpl } from './server/entry_points/verify_viewer_access_key';
 import type { AnswerPayload } from './shared/types/answer_payload';
 import type { DescriptiveScoringPollStatus, DescriptiveScoringResult } from './shared/types/descriptive_scoring';
+import type { ExamResultDetail } from './shared/types/exam_result_detail';
+import type { ExamResultSearchFilter, ExamResultSummary } from './shared/types/exam_result_search';
 import type { QuizQuestion } from './shared/types/quiz_question';
 import type { SubmitResultResponse } from './shared/types/submit_result_response';
 
@@ -48,4 +53,16 @@ function getDescriptiveScoringStatus(resultId: number): DescriptiveScoringPollSt
 
 function getDescriptiveScoringResult(resultId: number, payload: AnswerPayload): DescriptiveScoringResult {
   return getDescriptiveScoringResultImpl(resultId, payload);
+}
+
+function verifyViewerAccessKey(logRowNumber: number, accessKey: string): boolean {
+  return verifyViewerAccessKeyImpl(logRowNumber, accessKey);
+}
+
+function searchExamResults(accessKey: string, filter: ExamResultSearchFilter): ExamResultSummary[] {
+  return searchExamResultsImpl(accessKey, filter);
+}
+
+function getExamResultDetail(accessKey: string, rowNumber: number): ExamResultDetail {
+  return getExamResultDetailImpl(accessKey, rowNumber);
 }

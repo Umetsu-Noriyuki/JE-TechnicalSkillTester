@@ -3,6 +3,7 @@ export const SHEET_NAMES = {
   questionMaster: '問題マスタ',
   examResult: '受験結果',
   examPermission: '受験許可',
+  viewerLog: '閲覧ログ',
 } as const;
 
 /** スプレッドシート書き込み時のロック最大待機時間（ミリ秒）（11-3章）。 */
@@ -30,6 +31,18 @@ export const GEMINI_MAX_RETRY_COUNT = 3;
 
 /** Gemini呼び出し失敗時、再試行までの待機時間（ミリ秒）。429（レート制限超過）・503（過負荷）を想定。 */
 export const GEMINI_RETRY_DELAY_MILLISECONDS = 30000;
+
+/** 閲覧画面（15章）へのアクセスを許可するGoogleアカウントのドメイン。 */
+export const VIEWER_ALLOWED_EMAIL_DOMAIN = '@jinearth.co.jp';
+
+/** 「閲覧ログ」シートのB1セルに設定されたAccess Keyを比較する対象セル位置（1始まり）。 */
+export const VIEWER_ACCESS_KEY_CELL = { row: 1, column: 2 } as const;
+
+/** 「閲覧ログ」シートで、実際のログ記録が始まる行（1〜3行目はAccess Key設定・見出し等に使う、15章）。 */
+export const VIEWER_LOG_START_ROW = 4;
+
+/** 「受験結果」シートの先頭データ行（1行目はヘッダー行、11-2章）。 */
+export const EXAM_RESULT_START_ROW = 2;
 
 /** 「受験結果」シートに設ける記述式採点列（N〜T列）の固定列数（11-2章）。 */
 export const DESCRIPTIVE_SCORE_SLOT_COUNT = 7;
