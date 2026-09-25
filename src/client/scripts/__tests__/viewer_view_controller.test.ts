@@ -169,12 +169,22 @@ describe('renderExamResultDetail', () => {
     totalScore: 170,
     questionCount: 2,
     answerDetails: [
-      { questionId: 'q1', category: 'コーディング', subCategory: 'if文', format: 'choice', answerContent: 'A', score: 100, isCorrect: true },
+      {
+        questionId: 'q1',
+        category: 'コーディング',
+        subCategory: 'if文',
+        format: 'choice',
+        questionText: '選択式の問題文',
+        answerContent: 'A',
+        score: 100,
+        isCorrect: true,
+      },
       {
         questionId: 'q2',
         category: 'SQL',
         subCategory: '集計',
         format: 'text',
+        questionText: 'SQL文を書きなさい',
         answerContent: '回答内容',
         score: 70,
         modelAnswer: '模範回答',
@@ -214,6 +224,7 @@ describe('renderExamResultDetail', () => {
 
     expect(elements.descriptiveItems.children).toHaveLength(1);
     const cardText = elements.descriptiveItems.textContent ?? '';
+    expect(cardText).toContain('SQL文を書きなさい');
     expect(cardText).toContain('回答内容');
     expect(cardText).toContain('70点');
     expect(cardText).toContain('模範回答');

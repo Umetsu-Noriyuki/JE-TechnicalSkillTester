@@ -77,7 +77,14 @@ describe('scoreDescriptiveQuestions', () => {
       ]),
       answerDetailsJson: expect.any(String),
       descriptiveScoreCells: [
-        { questionId: 'q2', studentAnswer: '回答内容', score: 70, referenceAnswer: '模範回答', feedback: 'やや不足があります' },
+        {
+          questionId: 'q2',
+          questionText: '記述式の問題文',
+          studentAnswer: '回答内容',
+          score: 70,
+          referenceAnswer: '模範回答',
+          feedback: 'やや不足があります',
+        },
       ],
     });
   });
@@ -94,6 +101,7 @@ describe('scoreDescriptiveQuestions', () => {
         category: 'コーディング',
         subCategory: 'if文の条件式',
         format: 'choice',
+        questionText: '選択式の問題文',
         answerContent: 'A',
         score: 100,
         isCorrect: true,
@@ -103,6 +111,7 @@ describe('scoreDescriptiveQuestions', () => {
         category: 'SQL',
         subCategory: '集計',
         format: 'text',
+        questionText: '記述式の問題文',
         answerContent: '回答内容',
         score: 70,
         modelAnswer: '模範回答',

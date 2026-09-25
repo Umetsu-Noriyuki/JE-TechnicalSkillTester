@@ -17,12 +17,22 @@ const buildRow = (overrides: Partial<ParsedExamResultRow> = {}): ParsedExamResul
   overallCorrectRate: 999, // G〜K列由来ではなくM列から再集計されることを検証するため、あえて無関係な値にする
   durationText: '27分41秒（時間内に終了）',
   answerDetails: [
-    { questionId: 'q1', category: 'コーディング', subCategory: 'if文', format: 'choice', answerContent: 'A', score: 100, isCorrect: true },
+    {
+      questionId: 'q1',
+      category: 'コーディング',
+      subCategory: 'if文',
+      format: 'choice',
+      questionText: '選択式の問題文',
+      answerContent: 'A',
+      score: 100,
+      isCorrect: true,
+    },
     {
       questionId: 'q2',
       category: 'SQL',
       subCategory: '集計',
       format: 'text',
+      questionText: '記述式の問題文',
       answerContent: '回答内容',
       score: 70,
       modelAnswer: '模範回答',

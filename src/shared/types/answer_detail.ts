@@ -7,6 +7,8 @@ export interface AnswerDetail {
   category: string;
   subCategory: string;
   format: 'choice' | 'text';
+  /** 問題文。 */
+  questionText: string;
   /** 選択式：選択した選択肢の文言（未回答なら空文字）／記述式：入力内容 */
   answerContent: string;
   /** 0〜100（10-2章）。選択式：正解100点/不正解0点、記述式：Gemini採点結果。 */

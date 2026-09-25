@@ -3,6 +3,8 @@ import type { CategoryScore } from '../../../shared/types/scoring_result';
 /** 記述式1問分の採点結果（「受験結果」シートN〜T列の1セル分、11-2章）。 */
 export interface DescriptiveScoreSlot {
   questionId: string;
+  /** 問題文。 */
+  questionText: string;
   studentAnswer: string;
   score: number;
   referenceAnswer: string;

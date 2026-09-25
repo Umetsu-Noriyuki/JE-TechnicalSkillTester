@@ -129,7 +129,7 @@ describe('fetchDescriptiveScoringStatus', () => {
 describe('fetchDescriptiveScoringResult', () => {
   test('成功時は記述式の最終結果でPromiseを解決する', async () => {
     const result: DescriptiveScoringResult = {
-      items: [{ questionId: 'q2', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' }],
+      items: [{ questionId: 'q2', questionText: '記述式の問題文', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' }],
       scoringResult: { overallCorrectRate: 85, questionCount: 2, totalScore: 170, categoryScores: [] },
     };
 

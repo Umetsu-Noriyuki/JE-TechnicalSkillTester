@@ -43,7 +43,14 @@ describe('getDescriptiveScoringResult', () => {
     vi.clearAllMocks();
     vi.mocked(questionRepository.findAllQuestions).mockReturnValue([choiceQuestion, textQuestion]);
     vi.mocked(resultRepository.readDescriptiveScoreCells).mockReturnValue([
-      { questionId: 'q2', studentAnswer: '回答内容', score: 70, referenceAnswer: '模範回答', feedback: 'やや不足' },
+      {
+        questionId: 'q2',
+        questionText: '記述式の問題文',
+        studentAnswer: '回答内容',
+        score: 70,
+        referenceAnswer: '模範回答',
+        feedback: 'やや不足',
+      },
     ]);
   });
 
@@ -51,7 +58,14 @@ describe('getDescriptiveScoringResult', () => {
     const result = getDescriptiveScoringResult(5, buildPayload());
 
     expect(result.items).toEqual([
-      { questionId: 'q2', studentAnswer: '回答内容', score: 70, referenceAnswer: '模範回答', feedback: 'やや不足' },
+      {
+        questionId: 'q2',
+        questionText: '記述式の問題文',
+        studentAnswer: '回答内容',
+        score: 70,
+        referenceAnswer: '模範回答',
+        feedback: 'やや不足',
+      },
     ]);
     expect(resultRepository.readDescriptiveScoreCells).toHaveBeenCalledWith(5);
   });

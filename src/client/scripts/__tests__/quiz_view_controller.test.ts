@@ -400,10 +400,19 @@ const buildDescriptiveScoringElements = () => ({
 });
 
 describe('renderDescriptiveScoringResult', () => {
-  test('記述式1問ごとに入力回答・スコア・参考回答・フィードバックを表示し、採点中表示を隠す', () => {
+  test('記述式1問ごとに問題文・入力回答・スコア・参考回答・フィードバックを表示し、採点中表示を隠す', () => {
     const elements = buildDescriptiveScoringElements();
     const result: DescriptiveScoringResult = {
-      items: [{ questionId: 'q2', studentAnswer: '回答内容', score: 70, referenceAnswer: '模範回答', feedback: 'やや不足' }],
+      items: [
+        {
+          questionId: 'q2',
+          questionText: 'SQL文を書きなさい',
+          studentAnswer: '回答内容',
+          score: 70,
+          referenceAnswer: '模範回答',
+          feedback: 'やや不足',
+        },
+      ],
       scoringResult: { overallCorrectRate: 85, questionCount: 2, totalScore: 170, categoryScores: [] },
     };
 
@@ -412,6 +421,7 @@ describe('renderDescriptiveScoringResult', () => {
     expect(elements.descriptiveWaitMessage.style.display).toBe('none');
     expect(elements.categoryProvisionalNotice.style.display).toBe('none');
     const cardText = elements.descriptiveItems.textContent ?? '';
+    expect(cardText).toContain('SQL文を書きなさい');
     expect(cardText).toContain('回答内容');
     expect(cardText).toContain('70点');
     expect(cardText).toContain('模範回答');
@@ -421,7 +431,7 @@ describe('renderDescriptiveScoringResult', () => {
   test('最終的な総合正解率・分野別正解率を反映する', () => {
     const elements = buildDescriptiveScoringElements();
     const result: DescriptiveScoringResult = {
-      items: [{ questionId: 'q2', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' }],
+      items: [{ questionId: 'q2', questionText: 'SQL文を書きなさい', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' }],
       scoringResult: {
         overallCorrectRate: 85,
         questionCount: 2,
@@ -463,7 +473,7 @@ describe('pollDescriptiveScoring', () => {
   test('pendingの間は待機を挟みつつ再確認し、completedになったら最終結果を取得して描画する', async () => {
     const elements = buildDescriptiveScoringElements();
     const result: DescriptiveScoringResult = {
-      items: [{ questionId: 'q2', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' }],
+      items: [{ questionId: 'q2', questionText: 'SQL文を書きなさい', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' }],
       scoringResult: { overallCorrectRate: 85, questionCount: 2, totalScore: 170, categoryScores: [] },
     };
     const deps = buildDeps({

@@ -82,6 +82,15 @@ describe('findAllExamResultRows', () => {
 
     expect(findAllExamResultRows()[0]?.overallCorrectRate).toBe(0);
   });
+
+  test('社員番号（D列）が数字のみの場合、スプレッドシート側で数値型として認識されていても文字列として読み取る', () => {
+    const row = validRow();
+    row[3] = 123456; // Googleスプレッドシートが数値セルとして自動認識したケースを再現
+
+    vi.mocked(getSheetValues).mockReturnValue([['記録日時', '受験者区分', '氏名'], row]);
+
+    expect(findAllExamResultRows()[0]?.employeeNumber).toBe('123456');
+  });
 });
 
 describe('findExamResultRowByRowNumber', () => {

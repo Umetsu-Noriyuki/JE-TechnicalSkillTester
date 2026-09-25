@@ -35,6 +35,7 @@ export const getDescriptiveScoringResult = (resultId: number, payload: AnswerPay
     }
     items.push({
       questionId: slot.questionId,
+      questionText: slot.questionText,
       studentAnswer: slot.studentAnswer,
       score: slot.score,
       referenceAnswer: slot.referenceAnswer,
