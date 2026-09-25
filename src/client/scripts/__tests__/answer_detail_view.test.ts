@@ -162,4 +162,70 @@ describe('renderAnswerDetailList', () => {
 
     expect(container.children).toHaveLength(1);
   });
+
+  describe('問題番号の下の結果マーク', () => {
+    test('選択式：正解の場合は緑の「○」を表示する', () => {
+      const container = document.createElement('div');
+
+      renderAnswerDetailList(container, [choiceDetail({ isCorrect: true })]);
+
+      const mark = container.querySelector('.answer-result-mark');
+      expect(mark?.textContent).toBe('○');
+      expect(mark?.classList.contains('is-correct')).toBe(true);
+      expect(container.querySelector('.answer-result-unanswered')).toBeNull();
+    });
+
+    test('選択式：不正解（回答あり）の場合は赤の「×」を表示し、「未回答」は表示しない', () => {
+      const container = document.createElement('div');
+
+      renderAnswerDetailList(container, [choiceDetail({ answerContent: 'B', isCorrect: false, score: 0 })]);
+
+      const mark = container.querySelector('.answer-result-mark');
+      expect(mark?.textContent).toBe('×');
+      expect(mark?.classList.contains('is-incorrect')).toBe(true);
+      expect(container.querySelector('.answer-result-unanswered')).toBeNull();
+    });
+
+    test('選択式：未回答の場合は赤の「×」の下に赤字で「未回答」を表示する', () => {
+      const container = document.createElement('div');
+
+      renderAnswerDetailList(container, [choiceDetail({ answerContent: '', isCorrect: false, score: 0 })]);
+
+      const mark = container.querySelector('.answer-result-mark');
+      expect(mark?.textContent).toBe('×');
+      expect(mark?.classList.contains('is-incorrect')).toBe(true);
+      expect(container.querySelector('.answer-result-unanswered')?.textContent).toBe('未回答');
+    });
+
+    test('記述式：80点以上は緑色でスコアを表示する', () => {
+      const container = document.createElement('div');
+
+      renderAnswerDetailList(container, [textDetail({ score: 80 })]);
+
+      const mark = container.querySelector('.answer-result-mark');
+      expect(mark?.textContent).toBe('80点');
+      expect(mark?.classList.contains('is-correct')).toBe(true);
+    });
+
+    test('記述式：50点未満は赤色でスコアを表示する', () => {
+      const container = document.createElement('div');
+
+      renderAnswerDetailList(container, [textDetail({ score: 49 })]);
+
+      const mark = container.querySelector('.answer-result-mark');
+      expect(mark?.textContent).toBe('49点');
+      expect(mark?.classList.contains('is-incorrect')).toBe(true);
+    });
+
+    test('記述式：50点以上80点未満は既定色（is-correct/is-incorrectのいずれも付かない）でスコアを表示する', () => {
+      const container = document.createElement('div');
+
+      renderAnswerDetailList(container, [textDetail({ score: 65 })]);
+
+      const mark = container.querySelector('.answer-result-mark');
+      expect(mark?.textContent).toBe('65点');
+      expect(mark?.classList.contains('is-correct')).toBe(false);
+      expect(mark?.classList.contains('is-incorrect')).toBe(false);
+    });
+  });
 });

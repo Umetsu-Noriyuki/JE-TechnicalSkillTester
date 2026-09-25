@@ -73,7 +73,6 @@
       .question-number {
         font-size: 15px;
         font-weight: 700;
-        margin-right: 8px;
       }
       .choice-row {
         padding: 2px 0;
@@ -108,6 +107,33 @@
           return '<font color="#1a7f37">' + text + '：こちらが正解</font>';
         }
         return text;
+      }
+      /**
+       * 問題番号の下に表示する結果マーク（選択式：正解=緑「○」／不正解=赤「×」・未回答なら赤字
+       * 「未回答」を追加、記述式：スコア。80点以上=緑、50点未満=赤、それ以外=既定色）を組み立てる。
+       */
+      function resultMarkHtml(item) {
+        if (item.format === 'choice') {
+          var symbolColor = item.isCorrect ? '#1a7f37' : '#c4262e';
+          var html =
+            '<div style="font-size:24px;font-weight:700;line-height:1;"><font color="' +
+            symbolColor +
+            '">' +
+            (item.isCorrect ? '○' : '×') +
+            '</font></div>';
+          if (item.answerContent.trim() === '') {
+            html += '<div style="font-size:10px;font-weight:700;margin-top:2px;"><font color="#c4262e">未回答</font></div>';
+          }
+          return html;
+        }
+        var scoreColor = item.score >= 80 ? '#1a7f37' : item.score < 50 ? '#c4262e' : '#201e1d';
+        return (
+          '<div style="font-size:20px;font-weight:700;line-height:1;"><font color="' +
+          scoreColor +
+          '">' +
+          item.score +
+          '点</font></div>'
+        );
       }
     ?>
 
@@ -153,28 +179,37 @@
     <h2>回答詳細</h2>
     <? detail.answerDetails.forEach(function (item, index) { ?>
       <div class="question-card">
-        <div>
-          <span class="question-number">Q<?= index + 1 ?></span>
-          <span class="tag"><?= item.format === 'choice' ? '選択式' : '記述式' ?></span>
-          <span class="tag"><?= item.category ?></span>
-        </div>
-        <p><?= item.questionText ?></p>
-        <? if (item.format === 'choice') { ?>
-          <? (item.choices || []).forEach(function (choice) { ?>
-            <div class="choice-row"><?!= choiceRowHtml(choice) ?></div>
-          <? }); ?>
-        <? } else { ?>
-          <dl>
-            <dt>入力回答</dt>
-            <dd><?= item.answerContent.trim() === '' ? '（未回答）' : item.answerContent ?></dd>
-            <dt>スコア</dt>
-            <dd><?= item.score ?>点</dd>
-            <dt>参考回答</dt>
-            <dd><?= item.modelAnswer || '' ?></dd>
-            <dt>フィードバック</dt>
-            <dd><?= item.feedback || '' ?></dd>
-          </dl>
-        <? } ?>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="width: 64px; text-align: center; vertical-align: top; border: none; padding: 0;">
+              <div class="question-number"><?= 'Q' + (index + 1) ?></div>
+              <?!= resultMarkHtml(item) ?>
+            </td>
+            <td style="border: none; padding: 0 0 0 12px; vertical-align: top;">
+              <div>
+                <span class="tag"><?= item.format === 'choice' ? '選択式' : '記述式' ?></span>
+                <span class="tag"><?= item.category ?></span>
+              </div>
+              <p><?= item.questionText ?></p>
+              <? if (item.format === 'choice') { ?>
+                <? (item.choices || []).forEach(function (choice) { ?>
+                  <div class="choice-row"><?!= choiceRowHtml(choice) ?></div>
+                <? }); ?>
+              <? } else { ?>
+                <dl>
+                  <dt>入力回答</dt>
+                  <dd><?= item.answerContent.trim() === '' ? '（未回答）' : item.answerContent ?></dd>
+                  <dt>スコア</dt>
+                  <dd><?= item.score ?>点</dd>
+                  <dt>参考回答</dt>
+                  <dd><?= item.modelAnswer || '' ?></dd>
+                  <dt>フィードバック</dt>
+                  <dd><?= item.feedback || '' ?></dd>
+                </dl>
+              <? } ?>
+            </td>
+          </tr>
+        </table>
       </div>
     <? }); ?>
   </body>

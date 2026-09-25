@@ -11,6 +11,36 @@ const FORMAT_TAG_CLASS: Record<AnswerDetail['format'], string> = {
   text: 'tag tag-accent',
 };
 
+const SCORE_HIGH_THRESHOLD = 80;
+const SCORE_LOW_THRESHOLD = 50;
+
+/**
+ * 問題番号の下に表示する結果マークを組み立てる。
+ * - 選択式：正解＝緑の「○」、不正解＝赤の「×」。未回答の場合はさらに赤字で「未回答」を添える。
+ * - 記述式：スコアを表示（80点以上は緑、50点未満は赤、それ以外は既定色）。
+ */
+const buildResultMark = (detail: AnswerDetail): HTMLElement => {
+  const group = createEl('div', { className: 'answer-result-mark-group' });
+
+  if (detail.format === 'choice') {
+    const markClass = detail.isCorrect ? 'answer-result-mark is-correct' : 'answer-result-mark is-incorrect';
+    group.appendChild(createEl('div', { className: markClass, text: detail.isCorrect ? '○' : '×' }));
+    if (detail.answerContent.trim() === '') {
+      group.appendChild(createEl('div', { className: 'answer-result-unanswered', text: '未回答' }));
+    }
+    return group;
+  }
+
+  const scoreClass =
+    detail.score >= SCORE_HIGH_THRESHOLD
+      ? 'is-correct'
+      : detail.score < SCORE_LOW_THRESHOLD
+        ? 'is-incorrect'
+        : '';
+  group.appendChild(createEl('div', { className: `answer-result-mark ${scoreClass}`.trim(), text: `${detail.score}点` }));
+  return group;
+};
+
 const buildCardHeader = (detail: AnswerDetail): HTMLElement => {
   const header = createEl('div', { className: 'answer-detail-card-header' });
   header.append(
@@ -89,13 +119,18 @@ export const renderAnswerDetailList = (container: HTMLElement, answerDetails: re
 
   answerDetails.forEach((detail, index) => {
     const card = createEl('div', { className: 'answer-detail-card' });
-    const numberEl = createEl('div', { className: 'quiz-question-number', text: `Q${index + 1}` });
+
+    const numberColumn = createEl('div', { className: 'answer-detail-number-column' });
+    numberColumn.append(
+      createEl('div', { className: 'quiz-question-number', text: `Q${index + 1}` }),
+      buildResultMark(detail),
+    );
 
     const content = createEl('div', { className: 'answer-detail-card-content' });
     content.appendChild(buildCardHeader(detail));
     content.appendChild(detail.format === 'choice' ? buildChoiceCardBody(detail) : buildDescriptiveCardBody(detail));
 
-    card.append(numberEl, content);
+    card.append(numberColumn, content);
     container.appendChild(card);
   });
 };
