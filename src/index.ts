@@ -1,4 +1,5 @@
 import { doGet as doGetImpl } from './server/entry_points/do_get';
+import { downloadExamResultPdf as downloadExamResultPdfImpl } from './server/entry_points/download_exam_result_pdf';
 import { getDescriptiveScoringResult as getDescriptiveScoringResultImpl } from './server/entry_points/get_descriptive_scoring_result';
 import { getDescriptiveScoringStatus as getDescriptiveScoringStatusImpl } from './server/entry_points/get_descriptive_scoring_status';
 import { getExamResultDetail as getExamResultDetailImpl } from './server/entry_points/get_exam_result_detail';
@@ -11,6 +12,7 @@ import { verifyViewerAccessKey as verifyViewerAccessKeyImpl } from './server/ent
 import type { AnswerPayload } from './shared/types/answer_payload';
 import type { DescriptiveScoringPollStatus, DescriptiveScoringResult } from './shared/types/descriptive_scoring';
 import type { ExamResultDetail } from './shared/types/exam_result_detail';
+import type { ExamResultPdfDownload } from './shared/types/exam_result_pdf';
 import type { ExamResultSearchFilter, ExamResultSummary } from './shared/types/exam_result_search';
 import type { QuizQuestion } from './shared/types/quiz_question';
 import type { SubmitResultResponse } from './shared/types/submit_result_response';
@@ -65,4 +67,8 @@ function searchExamResults(accessKey: string, filter: ExamResultSearchFilter): E
 
 function getExamResultDetail(accessKey: string, rowNumber: number): ExamResultDetail {
   return getExamResultDetailImpl(accessKey, rowNumber);
+}
+
+function downloadExamResultPdf(accessKey: string, rowNumber: number): ExamResultPdfDownload {
+  return downloadExamResultPdfImpl(accessKey, rowNumber);
 }

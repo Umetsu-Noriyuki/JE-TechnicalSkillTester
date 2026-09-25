@@ -1,6 +1,7 @@
 import type { AnswerPayload } from '../../shared/types/answer_payload';
 import type { DescriptiveScoringPollStatus, DescriptiveScoringResult } from '../../shared/types/descriptive_scoring';
 import type { ExamResultDetail } from '../../shared/types/exam_result_detail';
+import type { ExamResultPdfDownload } from '../../shared/types/exam_result_pdf';
 import type { ExamResultSearchFilter, ExamResultSummary } from '../../shared/types/exam_result_search';
 import type { QuizQuestion } from '../../shared/types/quiz_question';
 import type { SubmitResultResponse } from '../../shared/types/submit_result_response';
@@ -16,6 +17,7 @@ interface GoogleScriptRun {
   verifyViewerAccessKey(logRowNumber: number, accessKey: string): void;
   searchExamResults(accessKey: string, filter: ExamResultSearchFilter): void;
   getExamResultDetail(accessKey: string, rowNumber: number): void;
+  downloadExamResultPdf(accessKey: string, rowNumber: number): void;
 }
 
 declare const google: { script: { run: GoogleScriptRun } };
@@ -101,4 +103,13 @@ export const fetchExamResultDetail = (accessKey: string, rowNumber: number): Pro
       .withSuccessHandler((value) => resolve(value as ExamResultDetail))
       .withFailureHandler((error) => reject(error))
       .getExamResultDetail(accessKey, rowNumber);
+  });
+
+/** 閲覧画面（15章）：「受験結果をPDFでダウンロード」ボタン押下時に呼び出す。 */
+export const downloadExamResultPdf = (accessKey: string, rowNumber: number): Promise<ExamResultPdfDownload> =>
+  new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((value) => resolve(value as ExamResultPdfDownload))
+      .withFailureHandler((error) => reject(error))
+      .downloadExamResultPdf(accessKey, rowNumber);
   });

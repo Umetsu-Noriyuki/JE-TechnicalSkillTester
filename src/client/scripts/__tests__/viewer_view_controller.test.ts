@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { ExamResultDetail } from '../../../shared/types/exam_result_detail';
 import type { ExamResultSummary } from '../../../shared/types/exam_result_search';
 import * as apiClient from '../api_client';
-import { bindViewerAccessKeyScreen, readSearchFilterValues, renderExamResultDetail, renderSearchResults } from '../viewer_view_controller';
+import {
+  bindViewerAccessKeyScreen,
+  readSearchFilterValues,
+  renderExamResultDetail,
+  renderSearchResults,
+  triggerPdfDownload,
+} from '../viewer_view_controller';
 
 vi.mock('../api_client');
 
@@ -141,6 +147,7 @@ describe('renderSearchResults', () => {
 describe('renderExamResultDetail', () => {
   const buildElements = () => ({
     section: document.createElement('div'),
+    downloadPdfButton: document.createElement('button'),
     roleTag: document.createElement('span'),
     name: document.createElement('dd'),
     employee: document.createElement('dd'),
@@ -233,6 +240,36 @@ describe('renderExamResultDetail', () => {
   });
 });
 
+describe('triggerPdfDownload', () => {
+  const originalCreateObjectURL = URL.createObjectURL;
+  const originalRevokeObjectURL = URL.revokeObjectURL;
+
+  beforeEach(() => {
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => {
+    URL.createObjectURL = originalCreateObjectURL;
+    URL.revokeObjectURL = originalRevokeObjectURL;
+  });
+
+  test('Base64データからBlobを作成し、一時的なaタグ経由でダウンロードを実行してから後始末する', () => {
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    triggerPdfDownload(btoa('PDF'), '受験結果.pdf');
+
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+    const [blob] = vi.mocked(URL.createObjectURL).mock.calls[0] as [Blob];
+    expect(blob.type).toBe('application/pdf');
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+    expect(document.querySelectorAll('a[download]')).toHaveLength(0);
+
+    clickSpy.mockRestore();
+  });
+});
+
 describe('bindViewerAccessKeyScreen', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -253,6 +290,7 @@ describe('bindViewerAccessKeyScreen', () => {
         <p id="viewer-search-empty-message" style="display: none"></p>
         <table id="viewer-search-result-table" style="display: none"><tbody id="viewer-search-result-table-body"></tbody></table>
         <div id="viewer-detail-section" style="display: none">
+          <button id="viewer-detail-download-pdf-button"></button>
           <span id="viewer-detail-role-tag"></span>
           <dd id="viewer-detail-name"></dd>
           <dd id="viewer-detail-employee"></dd>
@@ -308,5 +346,81 @@ describe('bindViewerAccessKeyScreen', () => {
     await Promise.resolve();
 
     expect(apiClient.searchExamResults).toHaveBeenCalledWith('secret-key', expect.any(Object));
+  });
+
+  test('検索結果選択後、PDFダウンロードボタン押下でdownloadExamResultPdfを入力済みAccess Keyと選択中の行番号で呼び出す', async () => {
+    vi.mocked(apiClient.verifyViewerAccessKey).mockResolvedValue(true);
+    vi.mocked(apiClient.searchExamResults).mockResolvedValue([
+      {
+        rowNumber: 7,
+        recordedAt: '2026-04-10T05:32:00.000Z',
+        roleLabel: '未経験の新入社員',
+        name: '佐藤 美咲',
+        employeeNumber: 'A123456',
+        department: '開発部',
+        overallCorrectRate: 85,
+      },
+    ]);
+    vi.mocked(apiClient.fetchExamResultDetail).mockResolvedValue({
+      rowNumber: 7,
+      recordedAt: '2026-04-10T05:32:00.000Z',
+      roleLabel: '未経験の新入社員',
+      name: '佐藤 美咲',
+      employeeNumber: 'A123456',
+      department: '開発部',
+      overallCorrectRate: 85,
+      durationText: '27分41秒（時間内に終了）',
+      categoryScores: [],
+      totalScore: 100,
+      questionCount: 1,
+      answerDetails: [],
+    });
+    vi.mocked(apiClient.downloadExamResultPdf).mockResolvedValue({ base64: btoa('PDF'), fileName: '受験結果.pdf' });
+
+    const originalCreateObjectURL = URL.createObjectURL;
+    const originalRevokeObjectURL = URL.revokeObjectURL;
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
+    URL.revokeObjectURL = vi.fn();
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    bindViewerAccessKeyScreen();
+    (document.getElementById('viewer-access-key-input') as HTMLInputElement).value = 'secret-key';
+    document.getElementById('viewer-access-key-submit-button')?.dispatchEvent(new MouseEvent('click'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    document.getElementById('viewer-search-button')?.dispatchEvent(new MouseEvent('click'));
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    document.querySelector('#viewer-search-result-table-body tr')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    document.getElementById('viewer-detail-download-pdf-button')?.dispatchEvent(new MouseEvent('click'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(apiClient.downloadExamResultPdf).toHaveBeenCalledWith('secret-key', 7);
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+
+    clickSpy.mockRestore();
+    URL.createObjectURL = originalCreateObjectURL;
+    URL.revokeObjectURL = originalRevokeObjectURL;
+  });
+
+  test('受験結果が未選択の場合、PDFダウンロードボタンを押してもdownloadExamResultPdfは呼ばれない', async () => {
+    vi.mocked(apiClient.verifyViewerAccessKey).mockResolvedValue(true);
+
+    bindViewerAccessKeyScreen();
+    document.getElementById('viewer-access-key-submit-button')?.dispatchEvent(new MouseEvent('click'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    document.getElementById('viewer-detail-download-pdf-button')?.dispatchEvent(new MouseEvent('click'));
+    await Promise.resolve();
+
+    expect(apiClient.downloadExamResultPdf).not.toHaveBeenCalled();
   });
 });

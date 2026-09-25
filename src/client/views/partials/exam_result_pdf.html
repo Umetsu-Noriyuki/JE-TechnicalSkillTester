@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      /*
+        PDF変換（Utilities.newBlob(...).getAs('application/pdf')）で確実に解釈されるよう、
+        CSSカスタムプロパティ・color-mix()等は使わず、素朴なインラインに近いスタイルのみを使う。
+        画面表示（result_screen.html / viewer_screen.html）とは独立したPDF専用テンプレートである。
+      */
+      body {
+        font-family: 'Helvetica Neue', Helvetica, Arial, 'Noto Sans JP', sans-serif;
+        color: #201e1d;
+        font-size: 12px;
+        margin: 28px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 6px 0 0;
+      }
+      h2 {
+        font-size: 15px;
+        margin: 26px 0 8px;
+        border-bottom: 1px solid #201e1d;
+        padding-bottom: 4px;
+      }
+      p {
+        margin: 4px 0;
+      }
+      .tag {
+        display: inline-block;
+        font-size: 10px;
+        padding: 2px 8px;
+        border: 1px solid #201e1d;
+        border-radius: 3px;
+        margin-right: 6px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 6px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 4px 8px;
+        border-bottom: 1px solid #d7d3d3;
+        font-size: 11px;
+      }
+      dl {
+        margin: 6px 0;
+      }
+      dt {
+        font-size: 10px;
+        color: #605d5d;
+        margin-top: 6px;
+      }
+      dd {
+        margin: 2px 0 0;
+      }
+      .score-headline {
+        font-size: 30px;
+        font-weight: 700;
+        margin: 4px 0;
+      }
+      .question-card {
+        border: 1px solid #d7d3d3;
+        border-radius: 4px;
+        padding: 12px;
+        margin-bottom: 12px;
+        page-break-inside: avoid;
+      }
+      .question-number {
+        font-size: 15px;
+        font-weight: 700;
+        margin-right: 8px;
+      }
+      .choice-row {
+        padding: 2px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <?
+      function choiceRowStyle(choice) {
+        if (choice.isSelected && choice.isCorrectChoice) {
+          return 'font-weight:700;color:#1a7f37;';
+        }
+        if (choice.isSelected && !choice.isCorrectChoice) {
+          return 'font-weight:700;color:#c4262e;';
+        }
+        if (!choice.isSelected && choice.isCorrectChoice) {
+          return 'color:#1a7f37;';
+        }
+        return '';
+      }
+      function choiceRowSuffix(choice) {
+        if (choice.isSelected && choice.isCorrectChoice) {
+          return '：正解';
+        }
+        if (choice.isSelected && !choice.isCorrectChoice) {
+          return '：間違い';
+        }
+        if (!choice.isSelected && choice.isCorrectChoice) {
+          return '：こちらが正解';
+        }
+        return '';
+      }
+    ?>
+
+    <span class="tag"><?= detail.roleLabel ?></span>
+    <h1>受験結果詳細</h1>
+    <dl>
+      <dt>氏名</dt>
+      <dd><?= detail.name ?></dd>
+      <dt>社員番号／所属</dt>
+      <dd><?= detail.employeeNumber ?> ／ <?= detail.department ?></dd>
+      <dt>所要時間</dt>
+      <dd><?= detail.durationText ?></dd>
+      <dt>記録日時</dt>
+      <dd><?= recordedAtText ?></dd>
+    </dl>
+
+    <h2>総合正解率</h2>
+    <p class="score-headline"><?= detail.overallCorrectRate ?>%</p>
+    <p>全<?= detail.questionCount ?>問の得点合計 <?= detail.totalScore ?>点（選択式は正誤、記述式はGemini採点結果を含む）</p>
+
+    <h2>分野別の正解率</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>区分</th>
+          <th>得点</th>
+          <th>正解率</th>
+          <th>記述式 提出</th>
+        </tr>
+      </thead>
+      <tbody>
+        <? detail.categoryScores.forEach(function (score) { ?>
+          <tr>
+            <td><?= score.categoryName ?></td>
+            <td><?= score.totalScore ?></td>
+            <td><?= score.correctRate ?>%</td>
+            <td><?= score.descriptiveSubmittedCount ?></td>
+          </tr>
+        <? }); ?>
+      </tbody>
+    </table>
+
+    <h2>回答詳細</h2>
+    <? detail.answerDetails.forEach(function (item, index) { ?>
+      <div class="question-card">
+        <div>
+          <span class="question-number">Q<?= index + 1 ?></span>
+          <span class="tag"><?= item.format === 'choice' ? '選択式' : '記述式' ?></span>
+          <span class="tag"><?= item.category ?></span>
+        </div>
+        <p><?= item.questionText ?></p>
+        <? if (item.format === 'choice') { ?>
+          <? (item.choices || []).forEach(function (choice) { ?>
+            <div class="choice-row" style="<?= choiceRowStyle(choice) ?>">
+              <?= choice.isSelected ? '✓ ' : '' ?><?= choice.text ?><?= choiceRowSuffix(choice) ?>
+            </div>
+          <? }); ?>
+        <? } else { ?>
+          <dl>
+            <dt>入力回答</dt>
+            <dd><?= item.answerContent.trim() === '' ? '（未回答）' : item.answerContent ?></dd>
+            <dt>スコア</dt>
+            <dd><?= item.score ?>点</dd>
+            <dt>参考回答</dt>
+            <dd><?= item.modelAnswer || '' ?></dd>
+            <dt>フィードバック</dt>
+            <dd><?= item.feedback || '' ?></dd>
+          </dl>
+        <? } ?>
+      </div>
+    <? }); ?>
+  </body>
+</html>
