@@ -82,29 +82,32 @@
   </head>
   <body>
     <?
-      function choiceRowStyle(choice) {
-        if (choice.isSelected && choice.isCorrectChoice) {
-          return 'font-weight:700;color:#1a7f37;';
-        }
-        if (choice.isSelected && !choice.isCorrectChoice) {
-          return 'font-weight:700;color:#c4262e;';
-        }
-        if (!choice.isSelected && choice.isCorrectChoice) {
-          return 'color:#1a7f37;';
-        }
-        return '';
+      /*
+        PDF変換エンジンは <style> ブロックやブロック要素への style="color:...;" を解釈しない
+        （実機で黒一色になることを確認済み）。色付けは <font color="..."> ・太字は <b> という
+        レガシーなHTMLタグで行う必要があるため、ここでHTML文字列を組み立てて <?!= %>（非エスケープ）
+        で出力する。choice.text は問題マスタ由来のデータだが、念のため手動でエスケープしてから
+        組み立てる。
+      */
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
       }
-      function choiceRowSuffix(choice) {
+      function choiceRowHtml(choice) {
+        var text = (choice.isSelected ? '✓ ' : '') + escapeHtml(choice.text);
         if (choice.isSelected && choice.isCorrectChoice) {
-          return '：正解';
+          return '<font color="#1a7f37"><b>' + text + '：正解</b></font>';
         }
         if (choice.isSelected && !choice.isCorrectChoice) {
-          return '：間違い';
+          return '<font color="#c4262e"><b>' + text + '：間違い</b></font>';
         }
         if (!choice.isSelected && choice.isCorrectChoice) {
-          return '：こちらが正解';
+          return '<font color="#1a7f37">' + text + '：こちらが正解</font>';
         }
-        return '';
+        return text;
       }
     ?>
 
@@ -158,9 +161,7 @@
         <p><?= item.questionText ?></p>
         <? if (item.format === 'choice') { ?>
           <? (item.choices || []).forEach(function (choice) { ?>
-            <div class="choice-row" style="<?= choiceRowStyle(choice) ?>">
-              <?= choice.isSelected ? '✓ ' : '' ?><?= choice.text ?><?= choiceRowSuffix(choice) ?>
-            </div>
+            <div class="choice-row"><?!= choiceRowHtml(choice) ?></div>
           <? }); ?>
         <? } else { ?>
           <dl>
