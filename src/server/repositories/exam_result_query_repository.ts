@@ -6,7 +6,20 @@ import { getRowValues, getSheetValues } from '../infrastructure/spreadsheet_clie
 /** M列（回答詳細JSON）までを読み取れば足りるため、A〜M列（13列）だけを対象とする。 */
 const EXAM_RESULT_READ_COLUMN_COUNT = 13;
 
-const asString = (value: unknown): string => (typeof value === 'string' ? value : '');
+/**
+ * 数字のみの社員番号等は、appendRow時にGoogleスプレッドシート側がセルを数値型として
+ * 自動認識することがある。読み取り時に typeof value === 'number' のケースも文字列へ変換し、
+ * 表示が空欄になることを防ぐ。
+ */
+const asString = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  return '';
+};
 
 const parseAnswerDetailsJson = (value: unknown): AnswerDetail[] => {
   if (typeof value !== 'string' || value.trim() === '') {

@@ -111,7 +111,7 @@ describe('updateExamResultAfterDescriptiveScoring', () => {
 
   test('ロックを取得したうえでF〜K列（総合・区分別正解率）とM〜T列（回答詳細・記述式採点結果）を上書きする', () => {
     const cells: DescriptiveScoreCell[] = [
-      { questionId: 'q2', studentAnswer: '回答内容', score: 70, referenceAnswer: '模範回答', feedback: 'やや不足' },
+      { questionId: 'q2', questionText: '記述式の問題文', studentAnswer: '回答内容', score: 70, referenceAnswer: '模範回答', feedback: 'やや不足' },
     ];
 
     updateExamResultAfterDescriptiveScoring(5, {
@@ -163,7 +163,7 @@ describe('readDescriptiveScoreCells', () => {
   });
 
   test('JSON文字列のセルはパースし、未使用・採点中のセルはnullとして返す', () => {
-    const slot = { questionId: 'q2', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' };
+    const slot = { questionId: 'q2', questionText: '記述式の問題文', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' };
     vi.mocked(getRowValues).mockReturnValue([JSON.stringify(slot), '採点中', '', '', '', '', '']);
 
     const result = readDescriptiveScoreCells(5);

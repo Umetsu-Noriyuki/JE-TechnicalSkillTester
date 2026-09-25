@@ -57,6 +57,7 @@ export const scoreDescriptiveQuestions = (resultId: number, payload: AnswerPaylo
     });
     descriptiveScoreCells.push({
       questionId: question.id,
+      questionText: question.text,
       studentAnswer,
       score: result.score,
       referenceAnswer: question.modelAnswer ?? '',

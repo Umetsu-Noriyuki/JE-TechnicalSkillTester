@@ -3,6 +3,8 @@ import type { ScoringResult } from './scoring_result';
 /** 記述式1問分の採点結果（提出内容・スコア・参考回答・フィードバック）。 */
 export interface DescriptiveScoringItem {
   questionId: string;
+  /** 問題文。 */
+  questionText: string;
   studentAnswer: string;
   score: number;
   referenceAnswer: string;

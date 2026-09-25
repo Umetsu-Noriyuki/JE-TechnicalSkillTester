@@ -400,7 +400,9 @@ export const renderDescriptiveScoringResult = (
       const card = createEl('div', { className: 'descriptive-score-card' });
       const dl = createEl('dl');
       dl.append(
-        createEl('dt', { text: `記述式${index + 1} 入力回答` }),
+        createEl('dt', { text: `記述式${index + 1} 問題文` }),
+        createEl('dd', { text: item.questionText }),
+        createEl('dt', { text: '入力回答' }),
         createEl('dd', { text: item.studentAnswer.trim() === '' ? '（未回答）' : item.studentAnswer }),
         createEl('dt', { text: 'スコア' }),
         createEl('dd', { text: `${item.score}点` }),
