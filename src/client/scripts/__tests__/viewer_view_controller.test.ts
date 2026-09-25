@@ -217,13 +217,14 @@ describe('renderExamResultDetail', () => {
     expect(elements.employee.textContent).toBe('—');
   });
 
-  test('記述式（format: text）の回答詳細のみをカードとして描画する', () => {
+  test('選択式・記述式すべての回答詳細を、受験画面と同じ順序でカードとして描画する', () => {
     const elements = buildElements();
 
     renderExamResultDetail(elements, buildDetail());
 
-    expect(elements.descriptiveItems.children).toHaveLength(1);
+    expect(elements.descriptiveItems.children).toHaveLength(2);
     const cardText = elements.descriptiveItems.textContent ?? '';
+    expect(cardText).toContain('選択式の問題文');
     expect(cardText).toContain('SQL文を書きなさい');
     expect(cardText).toContain('回答内容');
     expect(cardText).toContain('70点');

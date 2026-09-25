@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type { AnswerDetail } from '../../../shared/types/answer_detail';
 import type { DescriptiveScoringResult } from '../../../shared/types/descriptive_scoring';
 import type { CategoryScore } from '../../../shared/types/scoring_result';
 import type { QuizQuestion } from '../../../shared/types/quiz_question';
@@ -399,20 +400,24 @@ const buildDescriptiveScoringElements = () => ({
   descriptiveItems: document.createElement('div'),
 });
 
+const buildTextAnswerDetail = (overrides: Partial<AnswerDetail> = {}): AnswerDetail => ({
+  questionId: 'q2',
+  category: 'SQL',
+  subCategory: '集計',
+  format: 'text',
+  questionText: 'SQL文を書きなさい',
+  answerContent: '回答内容',
+  score: 70,
+  modelAnswer: '模範回答',
+  feedback: 'やや不足',
+  ...overrides,
+});
+
 describe('renderDescriptiveScoringResult', () => {
   test('記述式1問ごとに問題文・入力回答・スコア・参考回答・フィードバックを表示し、採点中表示を隠す', () => {
     const elements = buildDescriptiveScoringElements();
     const result: DescriptiveScoringResult = {
-      items: [
-        {
-          questionId: 'q2',
-          questionText: 'SQL文を書きなさい',
-          studentAnswer: '回答内容',
-          score: 70,
-          referenceAnswer: '模範回答',
-          feedback: 'やや不足',
-        },
-      ],
+      answerDetails: [buildTextAnswerDetail()],
       scoringResult: { overallCorrectRate: 85, questionCount: 2, totalScore: 170, categoryScores: [] },
     };
 
@@ -431,7 +436,7 @@ describe('renderDescriptiveScoringResult', () => {
   test('最終的な総合正解率・分野別正解率を反映する', () => {
     const elements = buildDescriptiveScoringElements();
     const result: DescriptiveScoringResult = {
-      items: [{ questionId: 'q2', questionText: 'SQL文を書きなさい', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' }],
+      answerDetails: [buildTextAnswerDetail()],
       scoringResult: {
         overallCorrectRate: 85,
         questionCount: 2,
@@ -446,23 +451,10 @@ describe('renderDescriptiveScoringResult', () => {
     expect(elements.choiceSummary.textContent).toContain('170点');
     expect(elements.categoryTableBody.querySelectorAll('td')[0]?.textContent).toBe('SQL');
   });
-
-  test('記述式問題が0問の場合はセクション自体を非表示にする', () => {
-    const elements = buildDescriptiveScoringElements();
-    const result: DescriptiveScoringResult = {
-      items: [],
-      scoringResult: { overallCorrectRate: 100, questionCount: 1, totalScore: 100, categoryScores: [] },
-    };
-
-    renderDescriptiveScoringResult(elements, result);
-
-    expect(elements.descriptiveSection.style.display).toBe('none');
-    expect(elements.categoryProvisionalNotice.style.display).toBe('none');
-  });
 });
 
 describe('pollDescriptiveScoring', () => {
-  const buildDeps = (overrides: Partial<Parameters<typeof pollDescriptiveScoring>[3]> = {}) => ({
+  const buildDeps = (overrides: Partial<Parameters<typeof pollDescriptiveScoring>[2]> = {}) => ({
     fetchStatus: vi.fn(),
     fetchResult: vi.fn(),
     sleep: vi.fn().mockResolvedValue(undefined),
@@ -473,7 +465,7 @@ describe('pollDescriptiveScoring', () => {
   test('pendingの間は待機を挟みつつ再確認し、completedになったら最終結果を取得して描画する', async () => {
     const elements = buildDescriptiveScoringElements();
     const result: DescriptiveScoringResult = {
-      items: [{ questionId: 'q2', questionText: 'SQL文を書きなさい', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' }],
+      answerDetails: [buildTextAnswerDetail()],
       scoringResult: { overallCorrectRate: 85, questionCount: 2, totalScore: 170, categoryScores: [] },
     };
     const deps = buildDeps({
@@ -481,23 +473,26 @@ describe('pollDescriptiveScoring', () => {
       fetchResult: vi.fn().mockResolvedValue(result),
     });
 
-    await pollDescriptiveScoring(5, { examinee: { role: 'newhire', name: '山田' }, answers: [], elapsedSeconds: 0, isTimedOut: false }, elements, deps);
+    await pollDescriptiveScoring(5, elements, deps);
 
     expect(deps.fetchStatus).toHaveBeenCalledTimes(2);
     expect(deps.sleep).toHaveBeenCalledWith(10000);
-    expect(deps.fetchResult).toHaveBeenCalledWith(5, expect.objectContaining({ examinee: expect.objectContaining({ name: '山田' }) }));
+    expect(deps.fetchResult).toHaveBeenCalledWith(5);
     expect(elements.descriptiveWaitMessage.style.display).toBe('none');
   });
 
   test('状況確認が失敗しても静かに再試行を続け、エラー表示はしない', async () => {
     const elements = buildDescriptiveScoringElements();
-    const result: DescriptiveScoringResult = { items: [], scoringResult: { overallCorrectRate: 0, questionCount: 0, totalScore: 0, categoryScores: [] } };
+    const result: DescriptiveScoringResult = {
+      answerDetails: [],
+      scoringResult: { overallCorrectRate: 0, questionCount: 0, totalScore: 0, categoryScores: [] },
+    };
     const deps = buildDeps({
       fetchStatus: vi.fn().mockRejectedValueOnce(new Error('network error')).mockResolvedValueOnce('completed'),
       fetchResult: vi.fn().mockResolvedValue(result),
     });
 
-    await pollDescriptiveScoring(5, { examinee: { role: 'newhire', name: '山田' }, answers: [], elapsedSeconds: 0, isTimedOut: false }, elements, deps);
+    await pollDescriptiveScoring(5, elements, deps);
 
     expect(deps.fetchStatus).toHaveBeenCalledTimes(2);
     expect(deps.fetchResult).toHaveBeenCalled();
@@ -511,7 +506,7 @@ describe('pollDescriptiveScoring', () => {
       fetchResult: vi.fn().mockRejectedValue(new Error('fetch error')),
     });
 
-    await pollDescriptiveScoring(5, { examinee: { role: 'newhire', name: '山田' }, answers: [], elapsedSeconds: 0, isTimedOut: false }, elements, deps);
+    await pollDescriptiveScoring(5, elements, deps);
 
     expect(elements.descriptiveError.style.display).toBe('');
   });

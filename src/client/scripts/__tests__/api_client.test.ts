@@ -129,20 +129,32 @@ describe('fetchDescriptiveScoringStatus', () => {
 describe('fetchDescriptiveScoringResult', () => {
   test('成功時は記述式の最終結果でPromiseを解決する', async () => {
     const result: DescriptiveScoringResult = {
-      items: [{ questionId: 'q2', questionText: '記述式の問題文', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' }],
+      answerDetails: [
+        {
+          questionId: 'q2',
+          category: 'SQL',
+          subCategory: '集計',
+          format: 'text',
+          questionText: '記述式の問題文',
+          answerContent: '回答',
+          score: 70,
+          modelAnswer: '模範',
+          feedback: 'FB',
+        },
+      ],
       scoringResult: { overallCorrectRate: 85, questionCount: 2, totalScore: 170, categoryScores: [] },
     };
 
-    const promise = fetchDescriptiveScoringResult(5, payload);
+    const promise = fetchDescriptiveScoringResult(5);
     const successCallback = runner.withSuccessHandler.mock.calls[0][0] as (value: unknown) => void;
     successCallback(result);
 
     await expect(promise).resolves.toEqual(result);
-    expect(runner.getDescriptiveScoringResult).toHaveBeenCalledWith(5, payload);
+    expect(runner.getDescriptiveScoringResult).toHaveBeenCalledWith(5);
   });
 
   test('失敗時はエラーでPromiseを拒否する', async () => {
-    const promise = fetchDescriptiveScoringResult(5, payload);
+    const promise = fetchDescriptiveScoringResult(5);
     const failureCallback = runner.withFailureHandler.mock.calls[0][0] as (error: Error) => void;
     failureCallback(new Error('fetch error'));
 

@@ -1,7 +1,9 @@
 import type { ExamResultDetail } from '../../shared/types/exam_result_detail';
 import type { ExamResultSearchFilter, ExamResultSummary } from '../../shared/types/exam_result_search';
 import { fetchExamResultDetail, searchExamResults, verifyViewerAccessKey } from './api_client';
-import { createEl, formatRecordedAt, getRequiredElement, populateScoreCmyk, renderCategoryScoreTable } from './quiz_view_controller';
+import { renderAnswerDetailList } from './answer_detail_view';
+import { createEl, getRequiredElement } from './dom_helpers';
+import { formatRecordedAt, populateScoreCmyk, renderCategoryScoreTable } from './quiz_view_controller';
 
 interface ViewerSearchElements {
   recordedAtFrom: HTMLInputElement;
@@ -122,28 +124,7 @@ export const renderExamResultDetail = (elements: ViewerDetailElements, detail: E
   populateScoreCmyk(elements.scoreCmyk, detail.overallCorrectRate);
   elements.choiceSummary.textContent = `全${detail.questionCount}問の得点合計 ${detail.totalScore}点（選択式は正誤、記述式はGemini採点結果を含む）`;
   renderCategoryScoreTable(elements.categoryTableBody, detail.categoryScores);
-
-  elements.descriptiveItems.replaceChildren();
-  detail.answerDetails
-    .filter((item) => item.format === 'text')
-    .forEach((item, index) => {
-      const card = createEl('div', { className: 'descriptive-score-card' });
-      const dl = createEl('dl');
-      dl.append(
-        createEl('dt', { text: `記述式${index + 1} 問題文` }),
-        createEl('dd', { text: item.questionText }),
-        createEl('dt', { text: '入力回答' }),
-        createEl('dd', { text: item.answerContent.trim() === '' ? '（未回答）' : item.answerContent }),
-        createEl('dt', { text: 'スコア' }),
-        createEl('dd', { text: `${item.score}点` }),
-        createEl('dt', { text: '参考回答' }),
-        createEl('dd', { text: item.modelAnswer ?? '' }),
-        createEl('dt', { text: 'フィードバック' }),
-        createEl('dd', { text: item.feedback ?? '' }),
-      );
-      card.appendChild(dl);
-      elements.descriptiveItems.appendChild(card);
-    });
+  renderAnswerDetailList(elements.descriptiveItems, detail.answerDetails);
 
   elements.section.style.display = 'flex';
 };

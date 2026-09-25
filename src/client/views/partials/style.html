@@ -10,6 +10,8 @@
     --color-accent: #0088b0;
     --color-accent-2: #d6006c;
     --color-divider: color-mix(in srgb, #201e1d 16%, transparent);
+    --color-success: #1a7f37;
+    --color-danger: #c4262e;
 
     --color-neutral-100: #f8f4f4;
     --color-neutral-200: #eae7e7;
@@ -333,29 +335,74 @@
     }
   }
 
-  /* — 記述式採点結果カード（結果画面） — */
-  .descriptive-score-card {
+  /* — 回答詳細カード（結果画面・閲覧画面共通） — */
+  .answer-detail-card {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     padding: var(--space-4);
     border: 1px solid var(--color-divider);
     border-radius: var(--radius-md);
   }
-  .descriptive-score-card dt {
+  .answer-detail-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .answer-detail-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .answer-detail-card-body > p {
+    margin: 0;
+    font-size: 15px;
+  }
+  .answer-detail-card-body dt {
     font-size: 11px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: color-mix(in srgb, var(--color-text) 60%, transparent);
     margin-top: var(--space-2);
   }
-  .descriptive-score-card dt:first-child {
+  .answer-detail-card-body dt:first-child {
     margin-top: 0;
   }
-  .descriptive-score-card dd {
+  .answer-detail-card-body dd {
     margin: 2px 0 0;
     font-size: 14px;
     white-space: pre-wrap;
+  }
+
+  /* — 選択式の選択肢一覧（回答詳細カード内） — */
+  .answer-choice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .answer-choice-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    font-size: 14px;
+    border-radius: var(--radius-md);
+  }
+  .answer-choice-check {
+    flex: none;
+    width: 1.2em;
+    text-align: center;
+  }
+  .answer-choice-row.is-correct-selected {
+    font-weight: 700;
+    color: var(--color-success);
+  }
+  .answer-choice-row.is-incorrect-selected {
+    font-weight: 700;
+    color: var(--color-danger);
+  }
+  .answer-choice-row.is-correct-unselected {
+    color: var(--color-success);
   }
 
   /* — CMYKスコア数字（結果画面の総合正解率表示） — */

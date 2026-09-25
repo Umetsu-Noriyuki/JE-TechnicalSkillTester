@@ -1,4 +1,4 @@
-import type { AnswerDetail } from '../../../shared/types/answer_detail';
+import type { AnswerDetail, AnswerDetailChoice } from '../../../shared/types/answer_detail';
 import type { QuestionAnswer } from '../../../shared/types/answer_payload';
 import type { Question } from '../models/question';
 
@@ -9,6 +9,12 @@ export const buildChoiceAnswerDetail = (question: Question, answer: QuestionAnsw
   const selectedText =
     answer.selectedChoiceNumber !== undefined ? (question.choices?.[answer.selectedChoiceNumber - 1] ?? '') : '';
 
+  const choices: AnswerDetailChoice[] = (question.choices ?? []).map((text, index) => ({
+    text,
+    isSelected: index + 1 === answer.selectedChoiceNumber,
+    isCorrectChoice: index + 1 === question.correctChoiceNumber,
+  }));
+
   return {
     questionId: question.id,
     category: question.category,
@@ -18,6 +24,7 @@ export const buildChoiceAnswerDetail = (question: Question, answer: QuestionAnsw
     answerContent: selectedText,
     score,
     isCorrect: score === 100,
+    choices,
   };
 };
 

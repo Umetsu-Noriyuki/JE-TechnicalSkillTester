@@ -12,7 +12,7 @@ interface GoogleScriptRun {
   submitResult(payload: AnswerPayload): void;
   scoreDescriptiveQuestions(resultId: number, payload: AnswerPayload): void;
   getDescriptiveScoringStatus(resultId: number): void;
-  getDescriptiveScoringResult(resultId: number, payload: AnswerPayload): void;
+  getDescriptiveScoringResult(resultId: number): void;
   verifyViewerAccessKey(logRowNumber: number, accessKey: string): void;
   searchExamResults(accessKey: string, filter: ExamResultSearchFilter): void;
   getExamResultDetail(accessKey: string, rowNumber: number): void;
@@ -67,16 +67,13 @@ export const fetchDescriptiveScoringStatus = (resultId: number): Promise<Descrip
       .getDescriptiveScoringStatus(resultId);
   });
 
-/** 記述式バックグラウンド採点の完了後、最終的な採点結果を1回だけ取得する。 */
-export const fetchDescriptiveScoringResult = (
-  resultId: number,
-  payload: AnswerPayload,
-): Promise<DescriptiveScoringResult> =>
+/** 記述式バックグラウンド採点の完了後、最終的な採点結果（全設問の回答詳細）を1回だけ取得する。 */
+export const fetchDescriptiveScoringResult = (resultId: number): Promise<DescriptiveScoringResult> =>
   new Promise((resolve, reject) => {
     google.script.run
       .withSuccessHandler((value) => resolve(value as DescriptiveScoringResult))
       .withFailureHandler((error) => reject(error))
-      .getDescriptiveScoringResult(resultId, payload);
+      .getDescriptiveScoringResult(resultId);
   });
 
 /** 閲覧画面（15章）：Access Key入力画面の送信時に呼び出す。 */

@@ -51,8 +51,8 @@ function getDescriptiveScoringStatus(resultId: number): DescriptiveScoringPollSt
   return getDescriptiveScoringStatusImpl(resultId);
 }
 
-function getDescriptiveScoringResult(resultId: number, payload: AnswerPayload): DescriptiveScoringResult {
-  return getDescriptiveScoringResultImpl(resultId, payload);
+function getDescriptiveScoringResult(resultId: number): DescriptiveScoringResult {
+  return getDescriptiveScoringResultImpl(resultId);
 }
 
 function verifyViewerAccessKey(logRowNumber: number, accessKey: string): boolean {

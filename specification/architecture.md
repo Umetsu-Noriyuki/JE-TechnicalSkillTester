@@ -45,7 +45,7 @@ src/
 │   │   ├── submit_result.ts            # submitResult(payload)：選択式の採点・記述式の提出内容を即時記録（10-1章 段階1）
 │   │   ├── score_descriptive_questions.ts # scoreDescriptiveQuestions(resultId, payload)：記述式のバックグラウンド採点・結果上書き（10-1章 段階2）
 │   │   ├── get_descriptive_scoring_status.ts # getDescriptiveScoringStatus(resultId)：バックグラウンド採点の完了確認（軽量なポーリング用、10-1章）
-│   │   ├── get_descriptive_scoring_result.ts # getDescriptiveScoringResult(resultId, payload)：採点完了後に最終結果を1回だけ取得（10-1章）
+│   │   ├── get_descriptive_scoring_result.ts # getDescriptiveScoringResult(resultId)：採点完了後、M列（回答詳細）を再集計し最終結果を1回だけ取得（10-1, 10-4章）
 │   │   ├── verify_viewer_access_key.ts # verifyViewerAccessKey(logRowNumber, accessKey)：閲覧画面Access Keyの検証・閲覧ログE列への記録（15-1, 15-2章）
 │   │   ├── search_exam_results.ts      # searchExamResults(accessKey, filter)：Access Key再検証のうえ「受験結果」シートをAND条件検索（15-3章）
 │   │   └── get_exam_result_detail.ts   # getExamResultDetail(accessKey, rowNumber)：Access Key再検証のうえ選択結果の詳細をM列から再集計して返す（15-5章）
@@ -89,7 +89,7 @@ src/
 │   │   ├── result_repository.ts        # 「受験結果」シートへの追記・記述式採点結果での上書き・完了確認（11章、LockService利用）
 │   │   ├── permission_repository.ts    # 「受験許可」シートの読み取り（6-3章）
 │   │   ├── viewer_log_repository.ts    # 「閲覧ログ」シートB1のAccess Key取得・検証、アクセスログの追記・更新（15-1, 15-2章）
-│   │   └── exam_result_query_repository.ts # 「受験結果」シートの全件・単一行の読み取り＋構造化（question_repository.tsと同様、パース処理を内包、15章）
+│   │   └── exam_result_query_repository.ts # 「受験結果」シートの全件・単一行の読み取り＋構造化（question_repository.tsと同様、パース処理を内包）。閲覧画面（15章）と採点結果画面のgetDescriptiveScoringResult（10-4章）の双方から利用する
 │   │
 │   ├── infrastructure/                 # GAS組み込みAPIの薄いラッパー（テスト容易性のため分離）
 │   │   ├── __tests__/
@@ -126,11 +126,15 @@ src/
 │   └── scripts/                        # クライアントサイドロジック（TypeScript、単体テスト対象）
 │       ├── __tests__/
 │       │   ├── timer.test.ts
+│       │   ├── dom_helpers.test.ts
 │       │   ├── api_client.test.ts
+│       │   ├── answer_detail_view.test.ts
 │       │   ├── quiz_view_controller.test.ts
 │       │   └── viewer_view_controller.test.ts
 │       ├── timer.ts                    # 経過時間表示・残り時間閾値判定（9-2, 9-3章）
+│       ├── dom_helpers.ts              # createEl / getRequiredElement（DOM生成・取得の汎用ヘルパー、循環import回避のため独立ファイルとする）
 │       ├── api_client.ts               # google.script.run のPromiseラッパー（記述式バックグラウンド採点・閲覧画面の各呼び出しを含む）
+│       ├── answer_detail_view.ts       # 選択式・記述式共通の回答詳細カード描画（renderAnswerDetailList）。採点結果画面・閲覧画面の双方から利用（10-4, 15-4章）
 │       ├── quiz_view_controller.ts     # 画面遷移・入力チェック・時間切れ時の操作無効化・記述式採点結果のポーリング表示（6章, 9-3, 9-4, 10-1, 10-4章）
 │       └── viewer_view_controller.ts   # Access Key送信・検索条件送信・検索結果一覧／詳細の描画（15章）
 │
@@ -141,10 +145,10 @@ src/
     │   ├── examinee_role.ts            # ExamineeRole = 'applicant' | 'newhire' | 'junior'（4章）
     │   ├── quiz_question.ts            # クライアントに返す出題データの型（正解情報を含まない）
     │   ├── answer_payload.ts           # submitResult / scoreDescriptiveQuestions等へ送信する回答データの型（10-1章）
-    │   ├── answer_detail.ts            # 設問1問分の回答詳細の型（11-2章M列。answer_detail_builder.tsが再エクスポートする）
+    │   ├── answer_detail.ts            # 設問1問分の回答詳細の型（選択式は全選択肢を含む、11-2章M列。answer_detail_builder.tsが再エクスポートする）
     │   ├── scoring_result.ts           # 総合・区分別の採点結果の型（10-3, 10-4章）
     │   ├── submit_result_response.ts   # submitResultの戻り値の型（resultId・選択式のみの暫定結果、10-1章）
-    │   ├── descriptive_scoring.ts      # 記述式バックグラウンド採点のポーリング状況・最終結果の型（10-1章）
+    │   ├── descriptive_scoring.ts      # 記述式バックグラウンド採点のポーリング状況・最終結果（全設問の回答詳細＋採点結果）の型（10-1章）
     │   ├── exam_result_search.ts       # 閲覧画面の検索条件・検索結果一覧要約の型（15-3章）
     │   └── exam_result_detail.ts       # 閲覧画面の選択結果詳細の型（15-5章）
     └── constants.ts                    # EXAM_DURATION_SEC, TOTAL_QUESTION_COUNT, CATEGORY_QUOTA, VIEWER_ACCESS_KEY_INVALID_ERROR_MESSAGE等
