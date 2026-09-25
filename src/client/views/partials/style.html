@@ -338,11 +338,17 @@
   /* — 回答詳細カード（結果画面・閲覧画面共通） — */
   .answer-detail-card {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    gap: 28px;
     padding: var(--space-4);
     border: 1px solid var(--color-divider);
     border-radius: var(--radius-md);
+  }
+  .answer-detail-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
   }
   .answer-detail-card-header {
     display: flex;

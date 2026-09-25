@@ -81,16 +81,21 @@ const buildDescriptiveCardBody = (detail: AnswerDetail): HTMLElement => {
 };
 
 /**
- * 回答詳細（選択式・記述式）を、受験画面と同じ問題順で一覧描画する（10-4, 15-4章）。
+ * 回答詳細（選択式・記述式）を、受験画面と同じ問題順・同じ「Q1」形式の番号で一覧描画する（10-4, 15-4章）。
  * 採点結果画面・閲覧画面の両方から共通で利用する。
  */
 export const renderAnswerDetailList = (container: HTMLElement, answerDetails: readonly AnswerDetail[]): void => {
   container.replaceChildren();
 
-  answerDetails.forEach((detail) => {
+  answerDetails.forEach((detail, index) => {
     const card = createEl('div', { className: 'answer-detail-card' });
-    card.appendChild(buildCardHeader(detail));
-    card.appendChild(detail.format === 'choice' ? buildChoiceCardBody(detail) : buildDescriptiveCardBody(detail));
+    const numberEl = createEl('div', { className: 'quiz-question-number', text: `Q${index + 1}` });
+
+    const content = createEl('div', { className: 'answer-detail-card-content' });
+    content.appendChild(buildCardHeader(detail));
+    content.appendChild(detail.format === 'choice' ? buildChoiceCardBody(detail) : buildDescriptiveCardBody(detail));
+
+    card.append(numberEl, content);
     container.appendChild(card);
   });
 };

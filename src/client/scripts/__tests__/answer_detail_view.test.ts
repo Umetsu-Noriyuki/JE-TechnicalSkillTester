@@ -42,6 +42,15 @@ describe('renderAnswerDetailList', () => {
     expect(container.children).toHaveLength(2);
   });
 
+  test('各カードの先頭に、受験画面と同じ「Q1」形式の番号を出題順に表示する', () => {
+    const container = document.createElement('div');
+
+    renderAnswerDetailList(container, [choiceDetail(), textDetail()]);
+
+    const numbers = Array.from(container.querySelectorAll('.quiz-question-number')).map((el) => el.textContent);
+    expect(numbers).toEqual(['Q1', 'Q2']);
+  });
+
   test('選択式：上部に「選択式」タグと区分タグを表示する', () => {
     const container = document.createElement('div');
 
