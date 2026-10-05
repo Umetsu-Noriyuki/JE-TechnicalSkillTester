@@ -80,6 +80,12 @@ describe('submitResult', () => {
         answerContent: 'A',
         score: 100,
         isCorrect: true,
+        choices: [
+          { text: 'A', isSelected: true, isCorrectChoice: true },
+          { text: 'B', isSelected: false, isCorrectChoice: false },
+          { text: 'C', isSelected: false, isCorrectChoice: false },
+          { text: 'D', isSelected: false, isCorrectChoice: false },
+        ],
       },
       {
         questionId: 'q2',

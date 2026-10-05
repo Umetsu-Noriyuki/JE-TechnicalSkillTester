@@ -1,7 +1,9 @@
 import type { ExamResultDetail } from '../../shared/types/exam_result_detail';
 import type { ExamResultSearchFilter, ExamResultSummary } from '../../shared/types/exam_result_search';
-import { fetchExamResultDetail, searchExamResults, verifyViewerAccessKey } from './api_client';
-import { createEl, formatRecordedAt, getRequiredElement, populateScoreCmyk, renderCategoryScoreTable } from './quiz_view_controller';
+import { downloadExamResultPdf, fetchExamResultDetail, searchExamResults, verifyViewerAccessKey } from './api_client';
+import { renderAnswerDetailList } from './answer_detail_view';
+import { createEl, getRequiredElement } from './dom_helpers';
+import { formatRecordedAt, populateScoreCmyk, renderCategoryScoreTable } from './quiz_view_controller';
 
 interface ViewerSearchElements {
   recordedAtFrom: HTMLInputElement;
@@ -18,6 +20,7 @@ interface ViewerSearchElements {
 
 interface ViewerDetailElements {
   section: HTMLElement;
+  downloadPdfButton: HTMLButtonElement;
   roleTag: HTMLElement;
   name: HTMLElement;
   employee: HTMLElement;
@@ -44,6 +47,7 @@ const getViewerSearchElements = (): ViewerSearchElements => ({
 
 const getViewerDetailElements = (): ViewerDetailElements => ({
   section: getRequiredElement('viewer-detail-section'),
+  downloadPdfButton: getRequiredElement<HTMLButtonElement>('viewer-detail-download-pdf-button'),
   roleTag: getRequiredElement('viewer-detail-role-tag'),
   name: getRequiredElement('viewer-detail-name'),
   employee: getRequiredElement('viewer-detail-employee'),
@@ -122,46 +126,66 @@ export const renderExamResultDetail = (elements: ViewerDetailElements, detail: E
   populateScoreCmyk(elements.scoreCmyk, detail.overallCorrectRate);
   elements.choiceSummary.textContent = `全${detail.questionCount}問の得点合計 ${detail.totalScore}点（選択式は正誤、記述式はGemini採点結果を含む）`;
   renderCategoryScoreTable(elements.categoryTableBody, detail.categoryScores);
-
-  elements.descriptiveItems.replaceChildren();
-  detail.answerDetails
-    .filter((item) => item.format === 'text')
-    .forEach((item, index) => {
-      const card = createEl('div', { className: 'descriptive-score-card' });
-      const dl = createEl('dl');
-      dl.append(
-        createEl('dt', { text: `記述式${index + 1} 問題文` }),
-        createEl('dd', { text: item.questionText }),
-        createEl('dt', { text: '入力回答' }),
-        createEl('dd', { text: item.answerContent.trim() === '' ? '（未回答）' : item.answerContent }),
-        createEl('dt', { text: 'スコア' }),
-        createEl('dd', { text: `${item.score}点` }),
-        createEl('dt', { text: '参考回答' }),
-        createEl('dd', { text: item.modelAnswer ?? '' }),
-        createEl('dt', { text: 'フィードバック' }),
-        createEl('dd', { text: item.feedback ?? '' }),
-      );
-      card.appendChild(dl);
-      elements.descriptiveItems.appendChild(card);
-    });
+  renderAnswerDetailList(elements.descriptiveItems, detail.answerDetails);
 
   elements.section.style.display = 'flex';
+};
+
+/**
+ * Base64エンコードされたPDFデータを、ブラウザ経由でローカルPCへダウンロードさせる（15章）。
+ * Blob → オブジェクトURL → 一時的な<a download>要素のクリックという標準的な手順で行う。
+ */
+export const triggerPdfDownload = (base64: string, fileName: string): void => {
+  const byteCharacters = atob(base64);
+  const byteNumbers = new Array<number>(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i += 1) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const blob = new Blob([new Uint8Array(byteNumbers)], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 
 /** 検索・詳細表示画面（Access Key検証後）の操作を配線する（15章）。 */
 const bindViewerSearch = (accessKey: string): void => {
   const searchElements = getViewerSearchElements();
   const detailElements = getViewerDetailElements();
+  let selectedRowNumber: number | undefined;
 
   const handleSelect = async (rowNumber: number): Promise<void> => {
     try {
       const detail = await fetchExamResultDetail(accessKey, rowNumber);
+      selectedRowNumber = rowNumber;
       renderExamResultDetail(detailElements, detail);
       detailElements.section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
       window.alert('受験結果の取得に失敗しました。時間をおいて再度お試しください。');
       // eslint-disable-next-line no-console
       console.error('fetchExamResultDetail failed', error);
+    }
+  };
+
+  const handleDownloadPdf = async (): Promise<void> => {
+    if (selectedRowNumber === undefined) {
+      return;
+    }
+    detailElements.downloadPdfButton.disabled = true;
+    try {
+      const { base64, fileName } = await downloadExamResultPdf(accessKey, selectedRowNumber);
+      triggerPdfDownload(base64, fileName);
+    } catch (error) {
+      window.alert('PDFのダウンロードに失敗しました。時間をおいて再度お試しください。');
+      // eslint-disable-next-line no-console
+      console.error('downloadExamResultPdf failed', error);
+    } finally {
+      detailElements.downloadPdfButton.disabled = false;
     }
   };
 
@@ -181,6 +205,10 @@ const bindViewerSearch = (accessKey: string): void => {
       searchElements.searchButton.disabled = false;
     }
   };
+
+  detailElements.downloadPdfButton.addEventListener('click', () => {
+    void handleDownloadPdf();
+  });
 
   searchElements.searchButton.addEventListener('click', () => {
     void handleSearch();

@@ -1,6 +1,6 @@
 import type { CategoryScore } from '../../shared/types/scoring_result';
 import { CATEGORY_NAMES, DESCRIPTIVE_SCORE_SLOT_COUNT, DESCRIPTIVE_SCORING_PENDING_MARKER, SHEET_NAMES } from '../config/constants';
-import type { DescriptiveScoreCell, DescriptiveScoreSlot, ExamResultRecord } from '../domain/models/exam_result_record';
+import type { DescriptiveScoreCell, ExamResultRecord } from '../domain/models/exam_result_record';
 import { appendSheetRow, getRowValues, setRowValues } from '../infrastructure/spreadsheet_client';
 import { withLock } from '../infrastructure/lock_service_client';
 
@@ -85,12 +85,3 @@ export const isDescriptiveScoringPending = (rowNumber: number): boolean =>
   getRowValues(SHEET_NAMES.examResult, rowNumber, 14, DESCRIPTIVE_SCORE_SLOT_COUNT).some(
     (cell) => cell === DESCRIPTIVE_SCORING_PENDING_MARKER,
   );
-
-/** 記述式採点列（N〜T列）を読み取り、採点済みの設問はパースして返す（未使用・未採点の枠は null）。 */
-export const readDescriptiveScoreCells = (rowNumber: number): (DescriptiveScoreSlot | null)[] =>
-  getRowValues(SHEET_NAMES.examResult, rowNumber, 14, DESCRIPTIVE_SCORE_SLOT_COUNT).map((cell) => {
-    if (typeof cell !== 'string' || cell.trim() === '' || cell === DESCRIPTIVE_SCORING_PENDING_MARKER) {
-      return null;
-    }
-    return JSON.parse(cell) as DescriptiveScoreSlot;
-  });

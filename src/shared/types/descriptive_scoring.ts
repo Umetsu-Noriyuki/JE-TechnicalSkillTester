@@ -1,22 +1,15 @@
+import type { AnswerDetail } from './answer_detail';
 import type { ScoringResult } from './scoring_result';
-
-/** 記述式1問分の採点結果（提出内容・スコア・参考回答・フィードバック）。 */
-export interface DescriptiveScoringItem {
-  questionId: string;
-  /** 問題文。 */
-  questionText: string;
-  studentAnswer: string;
-  score: number;
-  referenceAnswer: string;
-  feedback: string;
-}
 
 /** ポーリング用の軽量な状態確認（N〜T列が埋まっているかだけを見る、安価な問い合わせ）。 */
 export type DescriptiveScoringPollStatus = 'pending' | 'completed';
 
-/** 採点完了後に1回だけ取得する、記述式の最終結果一式。 */
+/**
+ * 記述式バックグラウンド採点の完了後に1回だけ取得する、最終結果一式（10-1章）。
+ * 「受験結果」シートM列から読み取った、選択式・記述式すべての回答詳細をそのまま返す。
+ */
 export interface DescriptiveScoringResult {
-  items: readonly DescriptiveScoringItem[];
+  answerDetails: readonly AnswerDetail[];
   /** 選択式＋記述式を含む最終的な採点結果（10-3章）。 */
   scoringResult: ScoringResult;
 }

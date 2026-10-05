@@ -2,12 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { DescriptiveScoreCell, ExamResultRecord } from '../../domain/models/exam_result_record';
 import { withLock } from '../../infrastructure/lock_service_client';
 import { appendSheetRow, getRowValues, setRowValues } from '../../infrastructure/spreadsheet_client';
-import {
-  appendExamResult,
-  isDescriptiveScoringPending,
-  readDescriptiveScoreCells,
-  updateExamResultAfterDescriptiveScoring,
-} from '../result_repository';
+import { appendExamResult, isDescriptiveScoringPending, updateExamResultAfterDescriptiveScoring } from '../result_repository';
 
 vi.mock('../../infrastructure/spreadsheet_client', () => ({
   appendSheetRow: vi.fn(),
@@ -154,20 +149,5 @@ describe('isDescriptiveScoringPending', () => {
     vi.mocked(getRowValues).mockReturnValue(['{"score":80}', '', '', '', '', '', '']);
 
     expect(isDescriptiveScoringPending(5)).toBe(false);
-  });
-});
-
-describe('readDescriptiveScoreCells', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  test('JSON文字列のセルはパースし、未使用・採点中のセルはnullとして返す', () => {
-    const slot = { questionId: 'q2', questionText: '記述式の問題文', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' };
-    vi.mocked(getRowValues).mockReturnValue([JSON.stringify(slot), '採点中', '', '', '', '', '']);
-
-    const result = readDescriptiveScoreCells(5);
-
-    expect(result).toEqual([slot, null, null, null, null, null, null]);
   });
 });

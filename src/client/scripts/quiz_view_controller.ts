@@ -12,6 +12,8 @@ import {
   startDescriptiveScoring,
   submitExamResult,
 } from './api_client';
+import { renderAnswerDetailList } from './answer_detail_view';
+import { createEl, getRequiredElement } from './dom_helpers';
 import { createExamTimer, formatDurationJapanese, formatElapsedTime, isRemainingTimeWarning } from './timer';
 
 /** 記述式バックグラウンド採点のポーリング間隔（ミリ秒）。 */
@@ -40,19 +42,6 @@ export const validateExamineeInput = (values: ExamineeInputValues, role: Examine
   return null;
 };
 
-export const createEl = <K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  options?: { className?: string; text?: string },
-): HTMLElementTagNameMap[K] => {
-  const element = document.createElement(tag);
-  if (options?.className !== undefined) {
-    element.className = options.className;
-  }
-  if (options?.text !== undefined) {
-    element.textContent = options.text;
-  }
-  return element;
-};
 
 const buildChoiceQuestionBody = (question: QuizQuestion, onAnswer: (questionId: string) => void): HTMLElement => {
   const choicesEl = createEl('div');
@@ -300,14 +289,6 @@ export const formatRecordedAt = (date: Date): string => {
   return `${date.getFullYear()}/${pad2(date.getMonth() + 1)}/${pad2(date.getDate())} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 };
 
-export const getRequiredElement = <T extends HTMLElement>(id: string): T => {
-  const element = document.getElementById(id);
-  if (element === null) {
-    throw new Error(`要素が見つかりません: #${id}`);
-  }
-  return element as T;
-};
-
 interface QuizScreenElements {
   screen: HTMLElement;
   elapsedTime: HTMLElement;
@@ -369,11 +350,10 @@ const getResultScreenElements = (): ResultScreenElements => ({
 });
 
 /**
- * 記述式のバックグラウンド採点結果を結果画面へ描画する（10-1章）。1問ごとに入力回答・
- * スコア・参考回答・フィードバックを表示し、採点中スピナー・案内文を非表示にする。
+ * 記述式のバックグラウンド採点完了後、結果画面の「回答詳細」を描画する（10-1, 10-4章）。
+ * 選択式・記述式すべての設問を、受験画面と同じ順序で表示し、採点中スピナー・案内文を非表示にする。
  * あわせて、選択式のみの暫定値だった総合正解率・分野別正解率を、記述式を含む最終値へ更新し、
- * 「選択式のみ暫定値」である旨の案内文（categoryProvisionalNotice）を非表示にする（10-3, 10-4章）。
- * 記述式問題が0問だった場合はこのセクション自体を非表示にする（この場合も最終結果のため案内文は非表示にする）。
+ * 「選択式のみ暫定値」である旨の案内文（categoryProvisionalNotice）を非表示にする（10-3章）。
  */
 export const renderDescriptiveScoringResult = (
   elements: Pick<
@@ -382,39 +362,14 @@ export const renderDescriptiveScoringResult = (
     | 'choiceSummary'
     | 'categoryTableBody'
     | 'categoryProvisionalNotice'
-    | 'descriptiveSection'
     | 'descriptiveWaitMessage'
     | 'descriptiveItems'
   >,
   result: DescriptiveScoringResult,
 ): void => {
   elements.categoryProvisionalNotice.style.display = 'none';
-
-  if (result.items.length === 0) {
-    elements.descriptiveSection.style.display = 'none';
-  } else {
-    elements.descriptiveWaitMessage.style.display = 'none';
-    elements.descriptiveItems.replaceChildren();
-
-    result.items.forEach((item, index) => {
-      const card = createEl('div', { className: 'descriptive-score-card' });
-      const dl = createEl('dl');
-      dl.append(
-        createEl('dt', { text: `記述式${index + 1} 問題文` }),
-        createEl('dd', { text: item.questionText }),
-        createEl('dt', { text: '入力回答' }),
-        createEl('dd', { text: item.studentAnswer.trim() === '' ? '（未回答）' : item.studentAnswer }),
-        createEl('dt', { text: 'スコア' }),
-        createEl('dd', { text: `${item.score}点` }),
-        createEl('dt', { text: '参考回答' }),
-        createEl('dd', { text: item.referenceAnswer }),
-        createEl('dt', { text: 'フィードバック' }),
-        createEl('dd', { text: item.feedback }),
-      );
-      card.appendChild(dl);
-      elements.descriptiveItems.appendChild(card);
-    });
-  }
+  elements.descriptiveWaitMessage.style.display = 'none';
+  renderAnswerDetailList(elements.descriptiveItems, result.answerDetails);
 
   populateScoreCmyk(elements.scoreCmyk, result.scoringResult.overallCorrectRate);
   elements.choiceSummary.textContent = `全${result.scoringResult.questionCount}問の得点合計 ${result.scoringResult.totalScore}点（選択式は正誤、記述式はGemini採点結果を含む）`;
@@ -423,7 +378,7 @@ export const renderDescriptiveScoringResult = (
 
 export interface DescriptiveScoringPollDeps {
   fetchStatus: (resultId: number) => Promise<DescriptiveScoringPollStatus>;
-  fetchResult: (resultId: number, payload: AnswerPayload) => Promise<DescriptiveScoringResult>;
+  fetchResult: (resultId: number) => Promise<DescriptiveScoringResult>;
   sleep: (milliseconds: number) => Promise<void>;
   pollIntervalMilliseconds: number;
 }
@@ -442,14 +397,12 @@ const defaultDescriptiveScoringPollDeps: DescriptiveScoringPollDeps = {
  */
 export const pollDescriptiveScoring = async (
   resultId: number,
-  payload: AnswerPayload,
   elements: Pick<
     ResultScreenElements,
     | 'scoreCmyk'
     | 'choiceSummary'
     | 'categoryTableBody'
     | 'categoryProvisionalNotice'
-    | 'descriptiveSection'
     | 'descriptiveWaitMessage'
     | 'descriptiveError'
     | 'descriptiveItems'
@@ -473,7 +426,7 @@ export const pollDescriptiveScoring = async (
   }
 
   try {
-    const result = await deps.fetchResult(resultId, payload);
+    const result = await deps.fetchResult(resultId);
     renderDescriptiveScoringResult(elements, result);
   } catch (error) {
     // eslint-disable-next-line no-console
@@ -559,7 +512,7 @@ const finishExam = async (
     renderCategoryScoreTable(resultElements.categoryTableBody, response.scoringResult.categoryScores);
     resultElements.screen.style.display = '';
 
-    void pollDescriptiveScoring(response.resultId, payload, resultElements);
+    void pollDescriptiveScoring(response.resultId, resultElements);
   }
 
   startDescriptiveScoring(response.resultId, payload).catch((error: unknown) => {

@@ -37,15 +37,36 @@ describe('buildChoiceAnswerDetail', () => {
       answerContent: 'B',
       score: 100,
       isCorrect: true,
+      choices: [
+        { text: 'A', isSelected: false, isCorrectChoice: false },
+        { text: 'B', isSelected: true, isCorrectChoice: true },
+        { text: 'C', isSelected: false, isCorrectChoice: false },
+        { text: 'D', isSelected: false, isCorrectChoice: false },
+      ],
     });
   });
 
-  test('未回答の場合、回答内容は空文字・isCorrect=falseとする', () => {
+  test('未回答の場合、回答内容は空文字・isCorrect=falseとする。choicesはどの肢もisSelected=falseとなる', () => {
     const answer: QuestionAnswer = { questionId: 'q1' };
 
     const result = buildChoiceAnswerDetail(choiceQuestion, answer, 0);
 
     expect(result).toMatchObject({ answerContent: '', score: 0, isCorrect: false });
+    expect(result.choices?.every((choice) => !choice.isSelected)).toBe(true);
+    expect(result.choices?.find((choice) => choice.isCorrectChoice)?.text).toBe('B');
+  });
+
+  test('不正解を選択した場合、選択した肢と正解の肢をそれぞれ判別できる', () => {
+    const answer: QuestionAnswer = { questionId: 'q1', selectedChoiceNumber: 3 };
+
+    const result = buildChoiceAnswerDetail(choiceQuestion, answer, 0);
+
+    expect(result.choices).toEqual([
+      { text: 'A', isSelected: false, isCorrectChoice: false },
+      { text: 'B', isSelected: false, isCorrectChoice: true },
+      { text: 'C', isSelected: true, isCorrectChoice: false },
+      { text: 'D', isSelected: false, isCorrectChoice: false },
+    ]);
   });
 });
 

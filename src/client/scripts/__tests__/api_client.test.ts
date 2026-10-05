@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { AnswerPayload } from '../../../shared/types/answer_payload';
 import type { DescriptiveScoringResult } from '../../../shared/types/descriptive_scoring';
 import type { ExamResultDetail } from '../../../shared/types/exam_result_detail';
+import type { ExamResultPdfDownload } from '../../../shared/types/exam_result_pdf';
 import type { ExamResultSummary } from '../../../shared/types/exam_result_search';
 import type { QuizQuestion } from '../../../shared/types/quiz_question';
 import type { SubmitResultResponse } from '../../../shared/types/submit_result_response';
 import {
+  downloadExamResultPdf,
   fetchDescriptiveScoringResult,
   fetchDescriptiveScoringStatus,
   fetchExamResultDetail,
@@ -27,6 +29,7 @@ const runner = {
   verifyViewerAccessKey: vi.fn(),
   searchExamResults: vi.fn(),
   getExamResultDetail: vi.fn(),
+  downloadExamResultPdf: vi.fn(),
 };
 
 beforeEach(() => {
@@ -40,6 +43,7 @@ beforeEach(() => {
   runner.verifyViewerAccessKey.mockReset();
   runner.searchExamResults.mockReset();
   runner.getExamResultDetail.mockReset();
+  runner.downloadExamResultPdf.mockReset();
 
   (globalThis as { google?: unknown }).google = { script: { run: runner } };
 });
@@ -129,20 +133,32 @@ describe('fetchDescriptiveScoringStatus', () => {
 describe('fetchDescriptiveScoringResult', () => {
   test('成功時は記述式の最終結果でPromiseを解決する', async () => {
     const result: DescriptiveScoringResult = {
-      items: [{ questionId: 'q2', questionText: '記述式の問題文', studentAnswer: '回答', score: 70, referenceAnswer: '模範', feedback: 'FB' }],
+      answerDetails: [
+        {
+          questionId: 'q2',
+          category: 'SQL',
+          subCategory: '集計',
+          format: 'text',
+          questionText: '記述式の問題文',
+          answerContent: '回答',
+          score: 70,
+          modelAnswer: '模範',
+          feedback: 'FB',
+        },
+      ],
       scoringResult: { overallCorrectRate: 85, questionCount: 2, totalScore: 170, categoryScores: [] },
     };
 
-    const promise = fetchDescriptiveScoringResult(5, payload);
+    const promise = fetchDescriptiveScoringResult(5);
     const successCallback = runner.withSuccessHandler.mock.calls[0][0] as (value: unknown) => void;
     successCallback(result);
 
     await expect(promise).resolves.toEqual(result);
-    expect(runner.getDescriptiveScoringResult).toHaveBeenCalledWith(5, payload);
+    expect(runner.getDescriptiveScoringResult).toHaveBeenCalledWith(5);
   });
 
   test('失敗時はエラーでPromiseを拒否する', async () => {
-    const promise = fetchDescriptiveScoringResult(5, payload);
+    const promise = fetchDescriptiveScoringResult(5);
     const failureCallback = runner.withFailureHandler.mock.calls[0][0] as (error: Error) => void;
     failureCallback(new Error('fetch error'));
 
@@ -231,5 +247,26 @@ describe('fetchExamResultDetail', () => {
     failureCallback(new Error('detail error'));
 
     await expect(promise).rejects.toThrow('detail error');
+  });
+});
+
+describe('downloadExamResultPdf', () => {
+  test('成功時はBase64・ファイル名でPromiseを解決する', async () => {
+    const download: ExamResultPdfDownload = { base64: 'base64-pdf', fileName: '受験結果_佐藤美咲_20260410.pdf' };
+
+    const promise = downloadExamResultPdf('secret-key', 2);
+    const successCallback = runner.withSuccessHandler.mock.calls[0][0] as (value: unknown) => void;
+    successCallback(download);
+
+    await expect(promise).resolves.toEqual(download);
+    expect(runner.downloadExamResultPdf).toHaveBeenCalledWith('secret-key', 2);
+  });
+
+  test('失敗時はエラーでPromiseを拒否する', async () => {
+    const promise = downloadExamResultPdf('secret-key', 2);
+    const failureCallback = runner.withFailureHandler.mock.calls[0][0] as (error: Error) => void;
+    failureCallback(new Error('pdf error'));
+
+    await expect(promise).rejects.toThrow('pdf error');
   });
 });

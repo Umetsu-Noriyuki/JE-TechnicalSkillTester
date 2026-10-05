@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      /*
+        PDF変換（Utilities.newBlob(...).getAs('application/pdf')）で確実に解釈されるよう、
+        CSSカスタムプロパティ・color-mix()等は使わず、素朴なインラインに近いスタイルのみを使う。
+        画面表示（result_screen.html / viewer_screen.html）とは独立したPDF専用テンプレートである。
+      */
+      body {
+        font-family: 'Helvetica Neue', Helvetica, Arial, 'Noto Sans JP', sans-serif;
+        color: #201e1d;
+        font-size: 12px;
+        margin: 28px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 6px 0 0;
+      }
+      h2 {
+        font-size: 15px;
+        margin: 26px 0 8px;
+        border-bottom: 1px solid #201e1d;
+        padding-bottom: 4px;
+      }
+      p {
+        margin: 4px 0;
+      }
+      .tag {
+        display: inline-block;
+        font-size: 10px;
+        padding: 2px 8px;
+        border: 1px solid #201e1d;
+        border-radius: 3px;
+        margin-right: 6px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 6px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 4px 8px;
+        border-bottom: 1px solid #d7d3d3;
+        font-size: 11px;
+      }
+      dl {
+        margin: 6px 0;
+      }
+      dt {
+        font-size: 10px;
+        color: #605d5d;
+        margin-top: 6px;
+      }
+      dd {
+        margin: 2px 0 0;
+      }
+      .score-headline {
+        font-size: 30px;
+        font-weight: 700;
+        margin: 4px 0;
+      }
+      .question-card {
+        border: 1px solid #d7d3d3;
+        border-radius: 4px;
+        padding: 12px;
+        margin-bottom: 12px;
+        page-break-inside: avoid;
+      }
+      .question-number {
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .choice-row {
+        padding: 2px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <?
+      /*
+        PDF変換エンジンは <style> ブロックやブロック要素への style="color:...;" を解釈しない
+        （実機で黒一色になることを確認済み）。色付けは <font color="..."> ・太字は <b> という
+        レガシーなHTMLタグで行う必要があるため、ここでHTML文字列を組み立てて <?!= %>（非エスケープ）
+        で出力する。choice.text は問題マスタ由来のデータだが、念のため手動でエスケープしてから
+        組み立てる。
+      */
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+      function choiceRowHtml(choice) {
+        var text = (choice.isSelected ? '✓ ' : '') + escapeHtml(choice.text);
+        if (choice.isSelected && choice.isCorrectChoice) {
+          return '<font color="#1a7f37"><b>' + text + '：正解</b></font>';
+        }
+        if (choice.isSelected && !choice.isCorrectChoice) {
+          return '<font color="#c4262e"><b>' + text + '：間違い</b></font>';
+        }
+        if (!choice.isSelected && choice.isCorrectChoice) {
+          return '<font color="#1a7f37">' + text + '：こちらが正解</font>';
+        }
+        return text;
+      }
+      /**
+       * 問題番号の下に表示する結果マーク（選択式：正解=緑「○」／不正解=赤「×」・未回答なら赤字
+       * 「未回答」を追加、記述式：スコア。80点以上=緑、50点未満=赤、それ以外=既定色）を組み立てる。
+       */
+      function resultMarkHtml(item) {
+        if (item.format === 'choice') {
+          var symbolColor = item.isCorrect ? '#1a7f37' : '#c4262e';
+          var html =
+            '<div style="font-size:24px;font-weight:700;line-height:1;"><font color="' +
+            symbolColor +
+            '">' +
+            (item.isCorrect ? '○' : '×') +
+            '</font></div>';
+          if (item.answerContent.trim() === '') {
+            html += '<div style="font-size:10px;font-weight:700;margin-top:2px;"><font color="#c4262e">未回答</font></div>';
+          }
+          return html;
+        }
+        var scoreColor = item.score >= 80 ? '#1a7f37' : item.score < 50 ? '#c4262e' : '#201e1d';
+        return (
+          '<div style="font-size:20px;font-weight:700;line-height:1;"><font color="' +
+          scoreColor +
+          '">' +
+          item.score +
+          '点</font></div>'
+        );
+      }
+    ?>
+
+    <span class="tag"><?= detail.roleLabel ?></span>
+    <h1>受験結果詳細</h1>
+    <dl>
+      <dt>氏名</dt>
+      <dd><?= detail.name ?></dd>
+      <dt>社員番号／所属</dt>
+      <dd><?= detail.employeeNumber ?> ／ <?= detail.department ?></dd>
+      <dt>所要時間</dt>
+      <dd><?= detail.durationText ?></dd>
+      <dt>記録日時</dt>
+      <dd><?= recordedAtText ?></dd>
+    </dl>
+
+    <h2>総合正解率</h2>
+    <p class="score-headline"><?= detail.overallCorrectRate ?>%</p>
+    <p>全<?= detail.questionCount ?>問の得点合計 <?= detail.totalScore ?>点（選択式は正誤、記述式はGemini採点結果を含む）</p>
+
+    <h2>分野別の正解率</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>区分</th>
+          <th>得点</th>
+          <th>正解率</th>
+          <th>記述式 提出</th>
+        </tr>
+      </thead>
+      <tbody>
+        <? detail.categoryScores.forEach(function (score) { ?>
+          <tr>
+            <td><?= score.categoryName ?></td>
+            <td><?= score.totalScore ?></td>
+            <td><?= score.correctRate ?>%</td>
+            <td><?= score.descriptiveSubmittedCount ?></td>
+          </tr>
+        <? }); ?>
+      </tbody>
+    </table>
+
+    <h2>回答詳細</h2>
+    <? detail.answerDetails.forEach(function (item, index) { ?>
+      <div class="question-card">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="width: 64px; text-align: center; vertical-align: top; border: none; padding: 0;">
+              <div class="question-number"><?= 'Q' + (index + 1) ?></div>
+              <?!= resultMarkHtml(item) ?>
+            </td>
+            <td style="border: none; padding: 0 0 0 12px; vertical-align: top;">
+              <div>
+                <span class="tag"><?= item.format === 'choice' ? '選択式' : '記述式' ?></span>
+                <span class="tag"><?= item.category ?></span>
+              </div>
+              <p><?= item.questionText ?></p>
+              <? if (item.format === 'choice') { ?>
+                <? (item.choices || []).forEach(function (choice) { ?>
+                  <div class="choice-row"><?!= choiceRowHtml(choice) ?></div>
+                <? }); ?>
+              <? } else { ?>
+                <dl>
+                  <dt>入力回答</dt>
+                  <dd><?= item.answerContent.trim() === '' ? '（未回答）' : item.answerContent ?></dd>
+                  <dt>スコア</dt>
+                  <dd><?= item.score ?>点</dd>
+                  <dt>参考回答</dt>
+                  <dd><?= item.modelAnswer || '' ?></dd>
+                  <dt>フィードバック</dt>
+                  <dd><?= item.feedback || '' ?></dd>
+                </dl>
+              <? } ?>
+            </td>
+          </tr>
+        </table>
+      </div>
+    <? }); ?>
+  </body>
+</html>
