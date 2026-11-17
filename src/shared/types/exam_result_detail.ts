@@ -14,4 +14,6 @@ export interface ExamResultDetail extends ExamResultSummary {
   totalScore: number;
   questionCount: number;
   answerDetails: readonly AnswerDetail[];
+  /** U列の禁止操作回数（9-5章）。1以上の場合のみ閲覧画面・PDFに表示する。 */
+  prohibitedOperationCount: number;
 }

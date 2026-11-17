@@ -153,6 +153,8 @@ describe('renderExamResultDetail', () => {
     employee: document.createElement('dd'),
     duration: document.createElement('dd'),
     recordedAt: document.createElement('dd'),
+    prohibitedOperationLabel: document.createElement('dt'),
+    prohibitedOperationCount: document.createElement('dd'),
     scoreCmyk: (() => {
       const el = document.createElement('div');
       el.innerHTML = '<span class="paper">0</span><span class="plate">0</span>';
@@ -198,6 +200,7 @@ describe('renderExamResultDetail', () => {
         feedback: 'やや不足',
       },
     ],
+    prohibitedOperationCount: 0,
     ...overrides,
   });
 
@@ -214,6 +217,35 @@ describe('renderExamResultDetail', () => {
     expect(elements.choiceSummary.textContent).toContain('170点');
     expect(elements.categoryTableBody.querySelectorAll('td')[0]?.textContent).toBe('SQL');
     expect(elements.section.style.display).toBe('flex');
+  });
+
+  test('【正常系】禁止操作回数が1回以上の場合は「N回」を表示する', () => {
+    const elements = buildElements();
+
+    renderExamResultDetail(elements, buildDetail({ prohibitedOperationCount: 3 }));
+
+    expect(elements.prohibitedOperationLabel.style.display).toBe('');
+    expect(elements.prohibitedOperationCount.style.display).toBe('');
+    expect(elements.prohibitedOperationCount.textContent).toBe('3回');
+  });
+
+  test('【正常系】禁止操作回数が0回の場合は見出しごと非表示にする', () => {
+    const elements = buildElements();
+
+    renderExamResultDetail(elements, buildDetail({ prohibitedOperationCount: 0 }));
+
+    expect(elements.prohibitedOperationLabel.style.display).toBe('none');
+    expect(elements.prohibitedOperationCount.style.display).toBe('none');
+  });
+
+  test('【正常系】1回以上の結果を表示した後に0回の結果を選択すると非表示に戻る', () => {
+    const elements = buildElements();
+
+    renderExamResultDetail(elements, buildDetail({ prohibitedOperationCount: 2 }));
+    renderExamResultDetail(elements, buildDetail({ prohibitedOperationCount: 0 }));
+
+    expect(elements.prohibitedOperationCount.style.display).toBe('none');
+    expect(elements.prohibitedOperationCount.textContent).toBe('—');
   });
 
   test('社員番号・所属が両方とも空の場合は"—"を表示する（入社希望者）', () => {
@@ -296,6 +328,8 @@ describe('bindViewerAccessKeyScreen', () => {
           <dd id="viewer-detail-employee"></dd>
           <dd id="viewer-detail-duration"></dd>
           <dd id="viewer-detail-recorded-at"></dd>
+          <dt id="viewer-detail-prohibited-operation-label"></dt>
+          <dd id="viewer-detail-prohibited-operation-count"></dd>
           <div id="viewer-detail-score-cmyk"><span class="paper">0</span></div>
           <p id="viewer-detail-choice-summary"></p>
           <table><tbody id="viewer-detail-category-table-body"></tbody></table>
@@ -374,6 +408,7 @@ describe('bindViewerAccessKeyScreen', () => {
       totalScore: 100,
       questionCount: 1,
       answerDetails: [],
+      prohibitedOperationCount: 0,
     });
     vi.mocked(apiClient.downloadExamResultPdf).mockResolvedValue({ base64: btoa('PDF'), fileName: '受験結果.pdf' });
 

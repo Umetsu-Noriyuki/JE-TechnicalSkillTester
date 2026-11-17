@@ -74,6 +74,7 @@ const payload: AnswerPayload = {
   answers: [],
   elapsedSeconds: 100,
   isTimedOut: false,
+  prohibitedOperationCount: 0,
 };
 
 describe('submitExamResult', () => {
@@ -231,6 +232,7 @@ describe('fetchExamResultDetail', () => {
       totalScore: 170,
       questionCount: 2,
       answerDetails: [],
+      prohibitedOperationCount: 0,
     };
 
     const promise = fetchExamResultDetail('secret-key', 2);

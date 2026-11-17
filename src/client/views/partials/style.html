@@ -219,6 +219,18 @@
     min-height: 90px;
     resize: vertical;
   }
+  /* 受験画面：禁止操作（コピー・貼り付け等）を行った際の案内文（9-5章） */
+  .quiz-guard-message {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-danger);
+  }
+  /* 閲覧画面：禁止操作回数（9-5章、1回以上の場合のみ表示） */
+  .prohibited-operation-count {
+    font-weight: 700;
+    color: var(--color-danger);
+  }
   .radio {
     display: inline-flex;
     align-items: center;

@@ -41,6 +41,7 @@ const buildRow = (overrides: Partial<ParsedExamResultRow> = {}): ParsedExamResul
       feedback: 'やや不足',
     },
   ],
+  prohibitedOperationCount: 0,
   ...overrides,
 });
 

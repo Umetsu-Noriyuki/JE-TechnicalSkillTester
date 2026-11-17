@@ -26,4 +26,9 @@ export interface AnswerPayload {
   answers: readonly QuestionAnswer[];
   elapsedSeconds: number;
   isTimedOut: boolean;
+  /**
+   * 受験中に抑止した禁止操作（コピー・貼り付け等）の回数（9-5章）。「受験結果」シートU列へ記録する。
+   * クライアントで集計した値のため、サーバー側で0以上の整数であることを検証する。
+   */
+  prohibitedOperationCount: number;
 }

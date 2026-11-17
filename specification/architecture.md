@@ -135,12 +135,14 @@ src/
 │       │   ├── api_client.test.ts
 │       │   ├── answer_detail_view.test.ts
 │       │   ├── quiz_view_controller.test.ts
+│       │   ├── text_input_guard.test.ts
 │       │   └── viewer_view_controller.test.ts
 │       ├── timer.ts                    # 経過時間表示・残り時間閾値判定（9-2, 9-3章）
 │       ├── dom_helpers.ts              # createEl / getRequiredElement（DOM生成・取得の汎用ヘルパー、循環import回避のため独立ファイルとする）
 │       ├── api_client.ts               # google.script.run のPromiseラッパー（記述式バックグラウンド採点・閲覧画面の各呼び出しを含む）
 │       ├── answer_detail_view.ts       # 選択式・記述式共通の回答詳細カード描画（renderAnswerDetailList）。採点結果画面・閲覧画面の双方から利用（10-4, 15-4章）
 │       ├── quiz_view_controller.ts     # 画面遷移・入力チェック・時間切れ時の操作無効化・記述式採点結果のポーリング表示（6章, 9-3, 9-4, 10-1, 10-4章）
+│       ├── text_input_guard.ts         # 受験画面のカンニング防止：記述式入力欄のペースト・D&D・右クリック・ショートカット、設問のコピー等の抑止と禁止操作時の案内表示（9-5章）
 │       └── viewer_view_controller.ts   # Access Key送信・検索条件送信・検索結果一覧／詳細の描画・PDFダウンロード（Base64→Blob→<a download>、15, 15-6章）
 │
 └── shared/                             # サーバー・クライアント双方が参照する型・定数（APIの契約）

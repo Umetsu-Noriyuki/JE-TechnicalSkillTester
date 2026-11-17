@@ -26,6 +26,8 @@ interface ViewerDetailElements {
   employee: HTMLElement;
   duration: HTMLElement;
   recordedAt: HTMLElement;
+  prohibitedOperationLabel: HTMLElement;
+  prohibitedOperationCount: HTMLElement;
   scoreCmyk: HTMLElement;
   choiceSummary: HTMLElement;
   categoryTableBody: HTMLElement;
@@ -53,6 +55,8 @@ const getViewerDetailElements = (): ViewerDetailElements => ({
   employee: getRequiredElement('viewer-detail-employee'),
   duration: getRequiredElement('viewer-detail-duration'),
   recordedAt: getRequiredElement('viewer-detail-recorded-at'),
+  prohibitedOperationLabel: getRequiredElement('viewer-detail-prohibited-operation-label'),
+  prohibitedOperationCount: getRequiredElement('viewer-detail-prohibited-operation-count'),
   scoreCmyk: getRequiredElement('viewer-detail-score-cmyk'),
   choiceSummary: getRequiredElement('viewer-detail-choice-summary'),
   categoryTableBody: getRequiredElement('viewer-detail-category-table-body'),
@@ -115,6 +119,18 @@ export const renderSearchResults = (
   }
 };
 
+/** 禁止操作回数（9-5章）を、1回以上の場合のみ表示する。0回の場合は見出しごと非表示にする。 */
+export const renderProhibitedOperationCount = (
+  elements: Pick<ViewerDetailElements, 'prohibitedOperationLabel' | 'prohibitedOperationCount'>,
+  count: number,
+): void => {
+  const hasProhibitedOperation = count >= 1;
+  const display = hasProhibitedOperation ? '' : 'none';
+  elements.prohibitedOperationLabel.style.display = display;
+  elements.prohibitedOperationCount.style.display = display;
+  elements.prohibitedOperationCount.textContent = hasProhibitedOperation ? `${count}回` : '—';
+};
+
 /** 選択された受験結果の詳細を、採点結果画面と同等のレイアウトで描画する（15章）。 */
 export const renderExamResultDetail = (elements: ViewerDetailElements, detail: ExamResultDetail): void => {
   elements.roleTag.textContent = detail.roleLabel;
@@ -123,6 +139,7 @@ export const renderExamResultDetail = (elements: ViewerDetailElements, detail: E
     detail.employeeNumber !== '' || detail.department !== '' ? `${detail.employeeNumber} ／ ${detail.department}` : '—';
   elements.duration.textContent = detail.durationText;
   elements.recordedAt.textContent = formatRecordedAt(new Date(detail.recordedAt));
+  renderProhibitedOperationCount(elements, detail.prohibitedOperationCount);
   populateScoreCmyk(elements.scoreCmyk, detail.overallCorrectRate);
   elements.choiceSummary.textContent = `全${detail.questionCount}問の得点合計 ${detail.totalScore}点（選択式は正誤、記述式はGemini採点結果を含む）`;
   renderCategoryScoreTable(elements.categoryTableBody, detail.categoryScores);

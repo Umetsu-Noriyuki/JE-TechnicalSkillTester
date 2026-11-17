@@ -17,6 +17,7 @@ const buildRow = (overrides: Partial<ParsedExamResultRow> = {}): ParsedExamResul
   overallCorrectRate: 85,
   durationText: '27分41秒（時間内に終了）',
   answerDetails: [],
+  prohibitedOperationCount: 0,
   ...overrides,
 });
 

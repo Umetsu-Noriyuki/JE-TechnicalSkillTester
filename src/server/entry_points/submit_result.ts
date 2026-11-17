@@ -14,6 +14,14 @@ import { appendExamResult } from '../repositories/result_repository';
 const PENDING_DESCRIPTIVE_FEEDBACK = '採点中';
 
 /**
+ * 禁止操作回数（9-5章）を記録用の値に正規化する。クライアントから送信される値のため、
+ * 0以上の整数でない場合（未送信・負数・小数・数値以外）は0として扱う。
+ * 不正値で例外を投げると受験結果そのものが記録されなくなるため、記録は継続させる。
+ */
+export const normalizeProhibitedOperationCount = (value: number | undefined): number =>
+  value !== undefined && Number.isInteger(value) && value >= 0 ? value : 0;
+
+/**
  * 「採点」／「回答終了」ボタン押下時に google.script.run から呼び出される（9-4章, 10-1章）。
  * 選択式の採点状況と記述式の提出状況のみを集計し、即座にクライアントへ返す高速な処理とする。
  * 記述式問題の採点（Gemini API呼び出し）は行わず、対象問題を「採点中」としてシートへ記録し、
@@ -57,6 +65,7 @@ export const submitResult = (payload: AnswerPayload): SubmitResultResponse => {
     isTimedOut: payload.isTimedOut,
     answerDetailsJson: JSON.stringify(answerDetails),
     descriptiveScoreCells,
+    prohibitedOperationCount: normalizeProhibitedOperationCount(payload.prohibitedOperationCount),
   };
 
   const resultId = appendExamResult(record);

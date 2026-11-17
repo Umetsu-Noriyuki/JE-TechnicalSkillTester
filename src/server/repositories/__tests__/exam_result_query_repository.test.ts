@@ -23,6 +23,14 @@ const validRow = (overrides: { name?: string; answerDetailsJson?: string; overal
   overrides.answerDetailsJson ?? '[]',
 ];
 
+/** U列（禁止操作回数）まで値を持つ行。N〜T列（記述式採点）は空欄とする。 */
+const EMPTY_DESCRIPTIVE_SCORE_CELLS = ['', '', '', '', '', '', ''];
+const rowWithProhibitedOperationCount = (count: unknown): unknown[] => [
+  ...validRow(),
+  ...EMPTY_DESCRIPTIVE_SCORE_CELLS,
+  count,
+];
+
 describe('findAllExamResultRows', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -91,6 +99,35 @@ describe('findAllExamResultRows', () => {
 
     expect(findAllExamResultRows()[0]?.employeeNumber).toBe('123456');
   });
+
+  test('【正常系】U列の禁止操作回数を数値として読み取る', () => {
+    vi.mocked(getSheetValues).mockReturnValue([
+      ['記録日時', '受験者区分', '氏名'],
+      rowWithProhibitedOperationCount(4),
+    ]);
+
+    expect(findAllExamResultRows()[0]?.prohibitedOperationCount).toBe(4);
+  });
+
+  test('【正常系】U列が存在しない（U列追加前に記録された）行は禁止操作回数を0として扱う', () => {
+    vi.mocked(getSheetValues).mockReturnValue([['記録日時', '受験者区分', '氏名'], validRow()]);
+
+    expect(findAllExamResultRows()[0]?.prohibitedOperationCount).toBe(0);
+  });
+
+  test.each([
+    ['空欄', ''],
+    ['文字列', '3回'],
+    ['負の数', -1],
+    ['小数', 1.5],
+  ])('【異常系】U列が%sの場合は禁止操作回数を0として扱う', (_label, value) => {
+    vi.mocked(getSheetValues).mockReturnValue([
+      ['記録日時', '受験者区分', '氏名'],
+      rowWithProhibitedOperationCount(value),
+    ]);
+
+    expect(findAllExamResultRows()[0]?.prohibitedOperationCount).toBe(0);
+  });
 });
 
 describe('findExamResultRowByRowNumber', () => {
@@ -98,13 +135,13 @@ describe('findExamResultRowByRowNumber', () => {
     vi.clearAllMocks();
   });
 
-  test('指定した行番号のA〜M列を読み取り、構造化して返す', () => {
-    vi.mocked(getRowValues).mockReturnValue(validRow({ name: '佐藤 美咲' }));
+  test('指定した行番号のA〜U列を読み取り、構造化して返す', () => {
+    vi.mocked(getRowValues).mockReturnValue(rowWithProhibitedOperationCount(2));
 
     const result = findExamResultRowByRowNumber(5);
 
-    expect(getRowValues).toHaveBeenCalledWith('受験結果', 5, 1, 13);
-    expect(result).toMatchObject({ rowNumber: 5, name: '佐藤 美咲' });
+    expect(getRowValues).toHaveBeenCalledWith('受験結果', 5, 1, 21);
+    expect(result).toMatchObject({ rowNumber: 5, name: '佐藤 美咲', prohibitedOperationCount: 2 });
   });
 
   test('該当行が存在しない（空行）場合はnullを返す', () => {
