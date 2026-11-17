@@ -25,6 +25,7 @@ const buildRow = (overrides: Partial<ParsedExamResultRow> = {}): ParsedExamResul
       feedback: 'やや不足',
     },
   ],
+  prohibitedOperationCount: 0,
   ...overrides,
 });
 
@@ -58,5 +59,11 @@ describe('buildExamResultDetail', () => {
     const result = buildExamResultDetail(buildRow());
 
     expect(result.recordedAt).toBe(new Date('2026-04-10T14:32:00').toISOString());
+  });
+
+  test('【正常系】禁止操作回数（U列）を詳細情報へ引き継ぐ', () => {
+    const result = buildExamResultDetail(buildRow({ prohibitedOperationCount: 6 }));
+
+    expect(result.prohibitedOperationCount).toBe(6);
   });
 });

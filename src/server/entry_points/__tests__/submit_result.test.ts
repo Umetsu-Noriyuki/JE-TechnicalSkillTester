@@ -3,7 +3,7 @@ import type { AnswerPayload } from '../../../shared/types/answer_payload';
 import type { Question } from '../../domain/models/question';
 import * as questionRepository from '../../repositories/question_repository';
 import * as resultRepository from '../../repositories/result_repository';
-import { submitResult } from '../submit_result';
+import { normalizeProhibitedOperationCount, submitResult } from '../submit_result';
 
 vi.mock('../../repositories/question_repository');
 vi.mock('../../repositories/result_repository');
@@ -44,6 +44,7 @@ const buildPayload = (overrides: Partial<AnswerPayload> = {}): AnswerPayload => 
   ],
   elapsedSeconds: 1000,
   isTimedOut: false,
+  prohibitedOperationCount: 0,
   ...overrides,
 });
 
@@ -141,5 +142,46 @@ describe('submitResult', () => {
     expect(record?.employeeNumber).toBe('');
     expect(record?.department).toBe('');
     expect(record?.roleLabel).toBe('入社希望者');
+  });
+
+  test('【正常系】禁止操作回数をそのまま受験結果に記録する', () => {
+    submitResult(buildPayload({ prohibitedOperationCount: 5 }));
+
+    const record = vi.mocked(resultRepository.appendExamResult).mock.calls[0]?.[0];
+    expect(record?.prohibitedOperationCount).toBe(5);
+  });
+
+  test('【異常系】禁止操作回数が不正な値の場合は0として記録し、記録処理は継続する', () => {
+    submitResult(buildPayload({ prohibitedOperationCount: -3 }));
+
+    const record = vi.mocked(resultRepository.appendExamResult).mock.calls[0]?.[0];
+    expect(record?.prohibitedOperationCount).toBe(0);
+    expect(resultRepository.appendExamResult).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('normalizeProhibitedOperationCount', () => {
+  test.each([
+    [0, 0],
+    [1, 1],
+    [42, 42],
+  ])('【正常系】0以上の整数 %d はそのまま %d を返す', (input, expected) => {
+    expect(normalizeProhibitedOperationCount(input)).toBe(expected);
+  });
+
+  test.each([
+    ['未送信（undefined）', undefined],
+    ['負の数', -1],
+    ['小数', 1.5],
+    ['NaN', Number.NaN],
+    ['Infinity', Number.POSITIVE_INFINITY],
+  ])('【異常系】%sの場合は0を返す', (_label, input) => {
+    expect(normalizeProhibitedOperationCount(input)).toBe(0);
+  });
+
+  test('【異常系】数値以外（文字列）が送信された場合は0を返す', () => {
+    const tamperedValue = '3' as unknown as number;
+
+    expect(normalizeProhibitedOperationCount(tamperedValue)).toBe(0);
   });
 });

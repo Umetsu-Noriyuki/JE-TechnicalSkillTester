@@ -21,6 +21,7 @@ const buildRow = (overrides: Partial<ParsedExamResultRow> = {}): ParsedExamResul
   answerDetails: [
     { questionId: 'q1', category: 'コーディング', subCategory: 'if文', format: 'choice', questionText: '問題1', answerContent: 'A', score: 100, isCorrect: true },
   ],
+  prohibitedOperationCount: 0,
   ...overrides,
 });
 

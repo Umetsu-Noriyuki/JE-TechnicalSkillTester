@@ -41,10 +41,11 @@ const toRow = (record: ExamResultRecord): (string | number | Date)[] => [
   formatDuration(record),
   record.answerDetailsJson,
   ...toDescriptiveScoreCells(record.descriptiveScoreCells),
+  record.prohibitedOperationCount,
 ];
 
 /**
- * 「受験結果」シートへ1行追記する（11-2章の列構成A〜T）。
+ * 「受験結果」シートへ1行追記する（11-2章の列構成A〜U）。
  * 複数受験者の同時書き込みによる競合を防ぐため、スクリプトロックを取得して実行する（11-3章）。
  * 記述式採点（N〜T列）は、この時点ではバックグラウンド採点が完了していないため
  * DESCRIPTIVE_SCORING_PENDING_MARKER を書き込む（10-1章）。

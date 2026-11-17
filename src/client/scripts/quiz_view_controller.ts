@@ -14,6 +14,7 @@ import {
 } from './api_client';
 import { renderAnswerDetailList } from './answer_detail_view';
 import { createEl, getRequiredElement } from './dom_helpers';
+import { applyCopyGuard, applyTextInputGuard, createBlockedOperationNotice } from './text_input_guard';
 import { createExamTimer, formatDurationJapanese, formatElapsedTime, isRemainingTimeWarning } from './timer';
 
 /** 記述式バックグラウンド採点のポーリング間隔（ミリ秒）。 */
@@ -67,7 +68,11 @@ const buildChoiceQuestionBody = (question: QuizQuestion, onAnswer: (questionId: 
   return choicesEl;
 };
 
-const buildTextQuestionBody = (question: QuizQuestion, onAnswer: (questionId: string) => void): HTMLElement => {
+const buildTextQuestionBody = (
+  question: QuizQuestion,
+  onAnswer: (questionId: string) => void,
+  onBlocked: () => void,
+): HTMLElement => {
   const textarea = createEl('textarea', { className: 'input' });
   textarea.style.minHeight = '120px';
   textarea.addEventListener('input', () => {
@@ -75,14 +80,20 @@ const buildTextQuestionBody = (question: QuizQuestion, onAnswer: (questionId: st
       onAnswer(question.id);
     }
   });
+  applyTextInputGuard(textarea, onBlocked);
   return textarea;
 };
 
-/** 受験画面に全問題を描画する（5章, 9章）。区分・小区分は表示しない（7-4章）。 */
+/**
+ * 受験画面に全問題を描画する（5章, 9章）。区分・小区分は表示しない（7-4章）。
+ * 各設問にはカンニング防止の操作抑止を設定し（9-5章）、禁止操作が行われた設問に案内文を表示したうえで
+ * onBlockedOperation を呼ぶ（回数の集計用）。
+ */
 export const renderQuizQuestions = (
   container: HTMLElement,
   questions: readonly QuizQuestion[],
   onAnswer: (questionId: string) => void,
+  onBlockedOperation: () => void = () => undefined,
 ): void => {
   container.replaceChildren();
 
@@ -91,6 +102,12 @@ export const renderQuizQuestions = (
     wrapper.dataset.questionId = question.id;
 
     const numberEl = createEl('div', { className: 'quiz-question-number', text: `Q${index + 1}` });
+
+    const notice = createBlockedOperationNotice();
+    const handleBlocked = (): void => {
+      notice.show();
+      onBlockedOperation();
+    };
 
     const bodyEl = createEl('div', { className: 'quiz-question-body' });
     const tag = createEl('span', {
@@ -101,10 +118,11 @@ export const renderQuizQuestions = (
     const answerBody =
       question.format === 'choice'
         ? buildChoiceQuestionBody(question, onAnswer)
-        : buildTextQuestionBody(question, onAnswer);
+        : buildTextQuestionBody(question, onAnswer, handleBlocked);
 
-    bodyEl.append(tag, textEl, answerBody);
+    bodyEl.append(tag, textEl, answerBody, notice.element);
     wrapper.append(numberEl, bodyEl);
+    applyCopyGuard(wrapper, handleBlocked);
     container.appendChild(wrapper);
   });
 };
@@ -455,6 +473,14 @@ const readExamineeInputValues = (): ExamineeInputValues => ({
   department: (document.getElementById('examinee-department') as HTMLInputElement | null)?.value ?? null,
 });
 
+/** 受験終了時点の進行状況（submitResultへ送信する値）。 */
+interface ExamProgress {
+  elapsedSeconds: number;
+  isTimedOut: boolean;
+  /** 受験中に抑止した禁止操作の回数（9-5章, 11-2章 U列）。 */
+  prohibitedOperationCount: number;
+}
+
 /**
  * 「採点」／「回答終了」ボタン押下時の処理（9-4章, 10章, 11章）：submitResultへ送信→
  * 受験者区分に応じて結果画面／終了画面へ切り替えて表示する（この時点の正解率は選択式のみの暫定値）。
@@ -466,9 +492,9 @@ const finishExam = async (
   role: ExamineeRole,
   examineeValues: ExamineeInputValues,
   quizElements: QuizScreenElements,
-  elapsedSeconds: number,
-  isTimedOut: boolean,
+  progress: ExamProgress,
 ): Promise<boolean> => {
+  const { elapsedSeconds, isTimedOut } = progress;
   const payload: AnswerPayload = {
     examinee: {
       role,
@@ -479,6 +505,7 @@ const finishExam = async (
     answers: collectAnswers(quizElements.questionsContainer),
     elapsedSeconds,
     isTimedOut,
+    prohibitedOperationCount: progress.prohibitedOperationCount,
   };
 
   let response: SubmitResultResponse;
@@ -581,7 +608,12 @@ const startExam = async (): Promise<void> => {
     updateNavGridAnsweredState(quizElements.navGrid, answeredQuestionIds);
   };
 
-  renderQuizQuestions(quizElements.questionsContainer, questions, handleAnswer);
+  let prohibitedOperationCount = 0;
+  const handleBlockedOperation = (): void => {
+    prohibitedOperationCount += 1;
+  };
+
+  renderQuizQuestions(quizElements.questionsContainer, questions, handleAnswer, handleBlockedOperation);
   renderNavGrid(
     quizElements.navGrid,
     questions.map((question) => question.id),
@@ -619,7 +651,11 @@ const startExam = async (): Promise<void> => {
   // 送信に失敗した場合は操作を復元し、再試行できるようにする（黙って失敗させない）。
   const attemptSubmit = async (): Promise<void> => {
     quizElements.submitButton.disabled = true;
-    const succeeded = await finishExam(role, examineeValues, quizElements, elapsedSeconds, isTimedOut);
+    const succeeded = await finishExam(role, examineeValues, quizElements, {
+      elapsedSeconds,
+      isTimedOut,
+      prohibitedOperationCount,
+    });
     if (succeeded) {
       timer.stop();
       disableQuizControls(quizElements);

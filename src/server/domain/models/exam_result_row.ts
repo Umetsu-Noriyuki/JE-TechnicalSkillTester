@@ -14,4 +14,6 @@ export interface ParsedExamResultRow {
   durationText: string;
   /** M列をパースした回答詳細。JSONとして解釈できない場合は空配列。 */
   answerDetails: readonly AnswerDetail[];
+  /** U列の禁止操作回数（9-5章）。空欄・不正な値の場合は0。 */
+  prohibitedOperationCount: number;
 }

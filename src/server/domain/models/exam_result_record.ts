@@ -42,4 +42,6 @@ export interface ExamResultRecord {
    * （出題数が7問未満の場合、残りの列は空欄のままになる）。
    */
   descriptiveScoreCells: readonly DescriptiveScoreCell[];
+  /** 禁止操作回数（11-2章 U列、9-5章）。 */
+  prohibitedOperationCount: number;
 }

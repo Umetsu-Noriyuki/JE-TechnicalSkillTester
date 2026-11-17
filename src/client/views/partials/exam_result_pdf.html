@@ -148,6 +148,10 @@
       <dd><?= detail.durationText ?></dd>
       <dt>記録日時</dt>
       <dd><?= recordedAtText ?></dd>
+      <? if (detail.prohibitedOperationCount >= 1) { ?>
+        <dt>禁止操作回数</dt>
+        <dd><font color="#c4262e"><b><?= detail.prohibitedOperationCount ?>回</b></font></dd>
+      <? } ?>
     </dl>
 
     <h2>総合正解率</h2>

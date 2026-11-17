@@ -29,6 +29,7 @@ const buildRecord = (overrides: Partial<ExamResultRecord> = {}): ExamResultRecor
   isTimedOut: false,
   answerDetailsJson: '[{"questionId":"q1"}]',
   descriptiveScoreCells: ['pending', 'pending'],
+  prohibitedOperationCount: 3,
   ...overrides,
 });
 
@@ -38,7 +39,7 @@ describe('appendExamResult', () => {
     vi.mocked(appendSheetRow).mockReturnValue(5);
   });
 
-  test('ロックを取得したうえで「受験結果」シートへA〜M列の順で1行追記し、追記した行番号を返す', () => {
+  test('ロックを取得したうえで「受験結果」シートへA〜U列の順で1行追記し、追記した行番号を返す', () => {
     const record = buildRecord();
 
     const resultId = appendExamResult(record);
@@ -65,8 +66,24 @@ describe('appendExamResult', () => {
       '',
       '',
       '',
+      3,
     ]);
     expect(resultId).toBe(5);
+  });
+
+  test('【正常系】禁止操作回数をU列（21列目）に記録する', () => {
+    appendExamResult(buildRecord({ prohibitedOperationCount: 7 }));
+
+    const [, row] = vi.mocked(appendSheetRow).mock.calls[0] ?? [];
+    expect(row).toHaveLength(21);
+    expect(row?.[20]).toBe(7);
+  });
+
+  test('【正常系】禁止操作が0回の場合はU列に0を記録する', () => {
+    appendExamResult(buildRecord({ prohibitedOperationCount: 0 }));
+
+    const [, row] = vi.mocked(appendSheetRow).mock.calls[0] ?? [];
+    expect(row?.[20]).toBe(0);
   });
 
   test('入社希望者は社員番号・所属を空文字として記録する', () => {
@@ -95,7 +112,7 @@ describe('appendExamResult', () => {
     appendExamResult(record);
 
     const [, row] = vi.mocked(appendSheetRow).mock.calls[0] ?? [];
-    expect(row?.slice(12)).toEqual(['[{"questionId":"q1"}]', '', '', '', '', '', '', '']);
+    expect(row?.slice(12)).toEqual(['[{"questionId":"q1"}]', '', '', '', '', '', '', '', 3]);
   });
 });
 
@@ -130,6 +147,20 @@ describe('updateExamResultAfterDescriptiveScoring', () => {
       '',
       '',
     ]);
+  });
+
+  test('【正常系】U列（禁止操作回数）は上書きしない（書き込み範囲がT列までに収まる）', () => {
+    updateExamResultAfterDescriptiveScoring(5, {
+      overallCorrectRate: 85,
+      categoryScores: [],
+      answerDetailsJson: '[]',
+      descriptiveScoreCells: [],
+    });
+
+    for (const [, , startColumn, values] of vi.mocked(setRowValues).mock.calls) {
+      const lastColumn = startColumn + values.length - 1;
+      expect(lastColumn).toBeLessThanOrEqual(20);
+    }
   });
 });
 

@@ -28,5 +28,6 @@ export const buildExamResultDetail = (row: ParsedExamResultRow): ExamResultDetai
     totalScore: aggregated.totalScore,
     questionCount: aggregated.questionCount,
     answerDetails: row.answerDetails,
+    prohibitedOperationCount: row.prohibitedOperationCount,
   };
 };

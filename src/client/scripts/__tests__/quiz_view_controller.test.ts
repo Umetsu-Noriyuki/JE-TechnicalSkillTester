@@ -127,6 +127,47 @@ describe('renderQuizQuestions', () => {
 
     expect(container.querySelectorAll('.quiz-question')).toHaveLength(1);
   });
+
+  test('【正常系】各設問に禁止操作時の案内文を非表示状態で配置する', () => {
+    renderQuizQuestions(container, [choiceQuestion, textQuestion], vi.fn());
+
+    const notices = container.querySelectorAll<HTMLElement>('.quiz-guard-message');
+    expect(notices).toHaveLength(2);
+    notices.forEach((notice) => expect(notice.style.display).toBe('none'));
+  });
+
+  test('【禁止操作】記述式の入力欄へのペーストを抑止し、案内文を表示してonBlockedOperationを呼ぶ', () => {
+    const onBlockedOperation = vi.fn();
+    renderQuizQuestions(container, [textQuestion], vi.fn(), onBlockedOperation);
+
+    const textarea = container.querySelector('textarea');
+    const pasteEvent = new Event('paste', { bubbles: true, cancelable: true });
+    textarea?.dispatchEvent(pasteEvent);
+
+    expect(pasteEvent.defaultPrevented).toBe(true);
+    expect(onBlockedOperation).toHaveBeenCalledTimes(1);
+    expect(container.querySelector<HTMLElement>('.quiz-guard-message')?.style.display).toBe('');
+  });
+
+  test('【禁止操作】問題文のコピーを抑止し、onBlockedOperationを呼ぶ（選択式も対象）', () => {
+    const onBlockedOperation = vi.fn();
+    renderQuizQuestions(container, [choiceQuestion], vi.fn(), onBlockedOperation);
+
+    const copyEvent = new Event('copy', { bubbles: true, cancelable: true });
+    container.querySelector('p')?.dispatchEvent(copyEvent);
+
+    expect(copyEvent.defaultPrevented).toBe(true);
+    expect(onBlockedOperation).toHaveBeenCalledTimes(1);
+  });
+
+  test('【正常系】onBlockedOperationを省略しても禁止操作は抑止される', () => {
+    renderQuizQuestions(container, [textQuestion], vi.fn());
+
+    const pasteEvent = new Event('paste', { bubbles: true, cancelable: true });
+    container.querySelector('textarea')?.dispatchEvent(pasteEvent);
+
+    expect(pasteEvent.defaultPrevented).toBe(true);
+  });
 });
 
 describe('updateProgress', () => {

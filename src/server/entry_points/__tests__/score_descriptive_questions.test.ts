@@ -46,6 +46,7 @@ const buildPayload = (overrides: Partial<AnswerPayload> = {}): AnswerPayload => 
   ],
   elapsedSeconds: 1000,
   isTimedOut: false,
+  prohibitedOperationCount: 0,
   ...overrides,
 });
 

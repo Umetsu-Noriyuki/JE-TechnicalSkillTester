@@ -3,8 +3,11 @@ import { EXAM_RESULT_START_ROW, SHEET_NAMES } from '../config/constants';
 import type { ParsedExamResultRow } from '../domain/models/exam_result_row';
 import { getRowValues, getSheetValues } from '../infrastructure/spreadsheet_client';
 
-/** M列（回答詳細JSON）までを読み取れば足りるため、A〜M列（13列）だけを対象とする。 */
-const EXAM_RESULT_READ_COLUMN_COUNT = 13;
+/** M列（回答詳細JSON）とU列（禁止操作回数）を読み取るため、A〜U列（21列）を対象とする。 */
+const EXAM_RESULT_READ_COLUMN_COUNT = 21;
+
+/** U列（禁止操作回数）の配列上のインデックス（0始まり）。 */
+const PROHIBITED_OPERATION_COUNT_INDEX = 20;
 
 /**
  * 数字のみの社員番号等は、appendRow時にGoogleスプレッドシート側がセルを数値型として
@@ -34,7 +37,14 @@ const parseAnswerDetailsJson = (value: unknown): AnswerDetail[] => {
 };
 
 /**
- * 「受験結果」シートの1行（A〜M列の値の配列）を構造化データへ変換する。
+ * U列（禁止操作回数）を数値として読み取る。U列追加前に記録された行（空欄）や、
+ * 0以上の整数でない値は0として扱う。
+ */
+const asProhibitedOperationCount = (value: unknown): number =>
+  typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : 0;
+
+/**
+ * 「受験結果」シートの1行（A〜U列の値の配列）を構造化データへ変換する。
  * A列（記録日時）がDateでない行（ヘッダー行・空行等）は null を返す。
  */
 const parseExamResultRow = (row: readonly unknown[], rowNumber: number): ParsedExamResultRow | null => {
@@ -58,6 +68,7 @@ const parseExamResultRow = (row: readonly unknown[], rowNumber: number): ParsedE
     overallCorrectRate: typeof overallCorrectRate === 'number' ? overallCorrectRate : 0,
     durationText: asString(row[11]),
     answerDetails: parseAnswerDetailsJson(row[12]),
+    prohibitedOperationCount: asProhibitedOperationCount(row[PROHIBITED_OPERATION_COUNT_INDEX]),
   };
 };
 
